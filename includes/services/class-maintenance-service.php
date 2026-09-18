@@ -29,9 +29,17 @@ class IB_Maintenance {
         wp_clear_scheduled_hook(self::DAILY_HOOK);
     }
 
-    /** Ports restock, planets produce, alien fleets regenerate and roam. */
-    public static function hourly() {
+    /**
+     * Ports restock, planets produce, alien fleets regenerate and roam.
+     * Skips itself if it ran within the last 50 minutes, so WP-Cron and a system cron can both
+     * be configured without doubling production; $force (the admin "Run now" button) overrides.
+     */
+    public static function hourly($force = false) {
         if (!IB_Game::universe_exists()) return 'No universe.';
+        $last = strtotime((string) get_option('ib_last_hourly'));
+        if (!$force && $last && current_time('timestamp') - $last < 50 * MINUTE_IN_SECONDS) {
+            return 'Hourly maintenance skipped: it already ran at ' . get_option('ib_last_hourly') . '.';
+        }
         $ports = IB_Ports::regenerate();
         $planets = IB_Planets::produce();
         $moved = IB_Factions::tick();
@@ -39,11 +47,17 @@ class IB_Maintenance {
         return sprintf('Hourly maintenance: %d ports restocked, %d planets produced, %d alien fleets moved.', (int) $ports, $planets, $moved);
     }
 
-    /** Turns reset, colonies grow, old news and read mail are cleaned up. */
-    public static function daily() {
+    /**
+     * Turns reset, colonies grow, old news and read mail are cleaned up.
+     * Runs at most once per calendar day (site timezone) unless $force is set.
+     */
+    public static function daily($force = false) {
         global $wpdb;
         if (!IB_Game::universe_exists()) return 'No universe.';
         $today = IB_Game::today();
+        if (!$force && substr((string) get_option('ib_last_daily'), 0, 10) === $today) {
+            return 'Daily maintenance skipped: it already ran today at ' . get_option('ib_last_daily') . '.';
+        }
         $wpdb->query($wpdb->prepare(
             'UPDATE ' . IB_DB::t('players') . ' SET turns_remaining = %d, last_turn_reset = %s WHERE last_turn_reset IS NULL OR last_turn_reset <> %s',
             (int) IB_Settings::get('turns_per_day'), $today, $today

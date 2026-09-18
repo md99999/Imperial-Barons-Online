@@ -28,4 +28,4 @@ if (!wp_next_scheduled(IB_Maintenance::HOURLY_HOOK) || !wp_next_scheduled(IB_Mai
     </tbody>
 </table>
 <p class="description" style="max-width:760px">Turns also reset automatically the first time a pilot visits on a new day, so play works even if cron is late.
-    WP-Cron only fires when the site receives visits; for exact timing, see <code>maintenance/README.md</code> to use a system cron instead.</p>
+    WP-Cron only fires when the site receives visits; for exact timing, see "Scheduled maintenance (cron)" in the plugin's <code>README.md</code> for setting up a real cron job.</p>

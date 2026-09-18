@@ -282,7 +282,7 @@ class IB_Admin {
 
     private static function do_run_maintenance() {
         $which = self::post('which') === 'daily' ? 'daily' : 'hourly';
-        $result = $which === 'daily' ? IB_Maintenance::daily() : IB_Maintenance::hourly();
+        $result = $which === 'daily' ? IB_Maintenance::daily(true) : IB_Maintenance::hourly(true);
         IB_Log::admin('maintenance', 'Manual run: ' . $result);
         self::notice('success', $result);
     }

@@ -87,9 +87,15 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    and a site menu with a single **Imperial Barons Online Home** link. On block themes, leave
    "Show this menu in the theme header" ticked so the header shows it. Players move between game
    pages using the in-game navigation bar on every game page.
-5. **Let players in.** Enable **Settings → General → Anyone can register**, or create user
-   accounts yourself. Players sign in, open **Imperial Barons Online Home**, and create a pilot.
-6. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
+5. **Let players in.** Only logged-in WordPress users can play, and each account gets one pilot.
+   Other players see only the pilot's alias, never the WordPress username. Either create user
+   accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
+   left as *Subscriber*). If registration is open, protect the registration form from bots with an
+   anti-bot plugin such as *Simple Cloudflare Turnstile*. Players sign in, open
+   **Imperial Barons Online Home**, and create a pilot.
+6. **Set up cron** so the hourly and daily game jobs run on time. See
+   [Scheduled maintenance (cron)](#scheduled-maintenance-cron) below.
+7. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
    costs, starting credits and ship, prices, port regeneration, discovery chance and more.
 
 ### Game pages
@@ -111,19 +117,125 @@ Pages are listed in the in-game navigation order.
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
 
-### Maintenance and cron
+### Scheduled maintenance (cron)
 
-The plugin uses WP-Cron for two jobs, which you can also run on demand from
-**Imperial Barons Online → Maintenance**:
+The game relies on two scheduled jobs:
 
 | Job | When | Does |
 |---|---|---|
-| Hourly | every hour | ports restock, planets produce, alien fleets regenerate and roam |
-| Daily | midnight (site timezone) | turns reset, colonies grow, old news and read mail purged |
+| Hourly | every hour | ports restock, planets produce commodities and fighters, alien fleets regenerate and roam |
+| Daily | midnight (site timezone) | turns reset, colonies grow, old news and read mail are purged |
 
-Turns also reset automatically the first time a pilot visits on a new day, so play works even if
-cron runs late. WP-Cron only fires when the site gets visits; for exact timing on a quiet site, see
-`maintenance/README.md` to use a real system cron instead.
+#### Why a real cron job is needed
+
+On activation the plugin schedules both jobs with **WP-Cron**, WordPress's built-in scheduler.
+WP-Cron is not a real clock: it only runs when someone visits the site. On a quiet site, ports may
+not restock and planets may not produce for hours at a time. For a live game, set up a **real cron
+job** on your server. This is done in your hosting control panel or on the server itself, outside
+WordPress.
+
+Some things are safe regardless of your setup:
+- **Turns** reset the first time each pilot visits on a new day, even if cron never runs.
+- **Both jobs guard against double runs.** The hourly job skips itself if it ran in the last
+  50 minutes, and the daily job runs at most once per day, so overlapping schedules won't double
+  production.
+- **You can run either job at any time** from **Imperial Barons Online → Maintenance**, which
+  also shows each job's last and next run.
+
+#### Choose one method
+
+**Method A (recommended): trigger WordPress's scheduler every 5 minutes.** This runs *all* of your
+site's scheduled tasks on time, including this game's jobs, WordPress updates checks and scheduled
+posts. WordPress works out the site timezone itself, so the daily job runs at your local midnight.
+
+1. Stop visitors from triggering WP-Cron. Add this line to `wp-config.php`, above the line that
+   says *"That's all, stop editing!"*:
+   ```php
+   define('DISABLE_WP_CRON', true);
+   ```
+2. Add a cron job that runs every 5 minutes, using **one** of these commands (replace
+   `https://example.com` with your site's address):
+   ```bash
+   wget -q -O - "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
+   ```
+   ```bash
+   curl -s "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
+   ```
+   If WP-CLI is installed on your server, this command does the same without a web request:
+   ```bash
+   cd /path/to/wordpress && wp cron event run --due-now >/dev/null 2>&1
+   ```
+
+**Method B: run the game's own scripts directly.** Use this if your host blocks web requests
+from cron, or you want the game jobs on their own schedule. The plugin includes two command-line
+scripts that load WordPress and run one job each:
+
+```bash
+php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/hourly_maintenance.php
+```
+```bash
+php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/daily_maintenance.php
+```
+
+Schedule the hourly script at minute 0 of every hour, and the daily script once a day at your
+site's midnight. If you also use `DISABLE_WP_CRON`, still add a Method A job so WordPress's own
+tasks keep running. The double-run guard makes it safe for both to be active.
+
+> **Server time vs. site time:** cron schedules use the *server's* clock, which is often UTC,
+> while the game uses the timezone in **Settings → General**. For Method B, set the daily job's
+> hour to your site's midnight in server time. For example, a US Eastern site on a UTC server
+> would run it at 05:00 (04:00 during daylight saving time). Method A handles this automatically.
+
+#### Setting it up on common hosts
+
+**cPanel** (most shared hosting):
+1. Log in to cPanel and open **Advanced → Cron Jobs**.
+2. Under **Add New Cron Job**, choose **Once Per Five Minutes** from *Common Settings*
+   (for Method B's hourly script choose **Once Per Hour**, and for the daily script
+   **Once Per Day** and then adjust the hour).
+3. Paste the command into **Command** and click **Add New Cron Job**.
+4. Paths in cPanel usually look like `/home/YOUR-CPANEL-USER/public_html/...`. For Method B,
+   the PHP binary is usually `/usr/local/bin/php`. Your host's documentation or support can confirm both.
+
+**Plesk:**
+1. Open **Websites & Domains → Scheduled Tasks → Add Task**.
+2. For Method A choose **Fetch a URL** and enter `https://example.com/wp-cron.php?doing_wp_cron`;
+   for Method B choose **Run a PHP script** and select the script file.
+3. Set the schedule (every 5 minutes, hourly or daily) and click **OK**.
+
+**Linux server or VPS (crontab):**
+1. Run `crontab -e` as the user that owns the WordPress files (often `www-data`:
+   `sudo crontab -u www-data -e`).
+2. Add the lines for your chosen method, then save:
+   ```
+   # Method A: every 5 minutes
+   */5 * * * * wget -q -O - "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
+
+   # Method B: hourly at minute 0, daily at 05:00 server time
+   0 * * * * /usr/bin/php /var/www/html/wp-content/plugins/imperial-barons-online/maintenance/hourly_maintenance.php >/dev/null 2>&1
+   0 5 * * * /usr/bin/php /var/www/html/wp-content/plugins/imperial-barons-online/maintenance/daily_maintenance.php >/dev/null 2>&1
+   ```
+3. Find the PHP path with `which php` and adjust the WordPress path to your install.
+
+**Windows server (Task Scheduler):**
+1. Open **Task Scheduler → Create Basic Task**.
+2. Set the trigger to **Daily**. In the task's properties, under **Triggers → Edit**, tick
+   **Repeat task every** and choose 5 minutes (Method A) or 1 hour (Method B hourly).
+3. For the action choose **Start a program**. For Method A, program `curl.exe` with
+   arguments `-s "https://example.com/wp-cron.php?doing_wp_cron"`. For Method B, program
+   `C:\path\to\php.exe` with the full path to the script as the argument.
+
+**Managed WordPress hosts** (WP Engine, Kinsta, SiteGround and others) often already run a real
+cron for WordPress, or offer a switch for it. Check your host's documentation before adding your own.
+
+**Local development** (e.g. Local by Flywheel): no setup is needed. WP-Cron runs as you browse,
+and you can use the **Run now** buttons on the Maintenance screen.
+
+#### Checking that it works
+
+Open **Imperial Barons Online → Maintenance**. After an hour or so, **Last run** for the hourly
+job should keep advancing. When you run a Method B script by hand in a terminal, it prints what it
+did, or *"skipped: it already ran…"* if the job ran recently.
 
 ### Updating and uninstalling
 
