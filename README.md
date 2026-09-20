@@ -290,6 +290,8 @@ See the `docs/` folder for details.
 
 ## License
 
+Copyright (C) 2026 Bill Mantz, <https://maddogproductions.online/>
+
 Imperial Barons Online is released under the **GNU General Public License, version 2 or later**
 (GPLv2+), the same license as WordPress itself. The full text is in [LICENSE](LICENSE).
 
