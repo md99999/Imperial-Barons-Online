@@ -288,6 +288,17 @@ See the `docs/` folder for details.
 
 ---
 
+## License
+
+Imperial Barons Online is released under the **GNU General Public License, version 2 or later**
+(GPLv2+), the same license as WordPress itself. The full text is in [LICENSE](LICENSE).
+
+You are free to use, modify and redistribute it, including commercially, provided derivative
+works are distributed under the same license and keep the copyright notice. The software comes
+with no warranty.
+
+---
+
 ## Code layout
 
 ```
