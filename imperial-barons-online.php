@@ -5,7 +5,7 @@ Plugin URI: https://maddogproductions.online/
 Author: Bill Mantz
 Author URI: https://maddogproductions.online/
 Description: Imperial Barons Online: a turn-based space trading and conquest game. Trade, colonize and fight your way up the ranks of the Imperium, played through WordPress pages using shortcodes.
-Version: 1.0.0
+Version: 1.1.0
 Requires PHP: 7.4
 Requires at least: 5.8
 Text Domain: imperial-barons-online
@@ -24,7 +24,7 @@ See the GNU General Public License for more details. A copy is included in LICEN
 */
 if (!defined('ABSPATH')) exit;
 
-define('IB_VERSION', '1.0.0');
+define('IB_VERSION', '1.1.0');
 define('IB_DB_VERSION', '3');
 define('IB_FILE', __FILE__);
 define('IB_PATH', plugin_dir_path(__FILE__));

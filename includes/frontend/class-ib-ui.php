@@ -72,11 +72,23 @@ class IB_UI {
         return $out;
     }
 
-    /** Opens a POST form for a game action; close it with </form>. */
+    /**
+     * Opens a POST form for a game action; close it with </form>.
+     * The form carries the page it was submitted from, so actions that stay put return here.
+     * (wp_get_referer() cannot be used for that: it returns false when the referring page is
+     * the same URL as the request, which is exactly the case for these self-posting forms.)
+     */
     public static function form_open($action, $class = '') {
         return '<form method="post" class="ib-form ' . esc_attr($class) . '">'
             . '<input type="hidden" name="ib_action" value="' . esc_attr($action) . '">'
+            . '<input type="hidden" name="ib_return" value="' . esc_url(self::current_url()) . '">'
             . wp_nonce_field('ib_action', 'ib_nonce', true, false);
+    }
+
+    /** The URL of the page being viewed, including its query string. */
+    public static function current_url() {
+        $url = home_url(add_query_arg([]));
+        return remove_query_arg(['ib_action', 'ib_nonce', '_wp_http_referer'], $url);
     }
 
     /** Opens a GET form targeting a game page, preserving query args such as ?page_id= on plain permalinks. */

@@ -10,7 +10,13 @@ class IB_Actions {
     public static function handle() {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || empty($_POST['ib_action']) || !is_user_logged_in()) return;
 
-        $redirect = wp_get_referer() ?: IB_UI::url('dashboard');
+        // Where to go afterwards for actions that keep the player on the same page: the page the
+        // form was submitted from. wp_get_referer() is no help here, as it returns false when the
+        // referring page is the same URL as the request, which these self-posting forms always are.
+        $return = isset($_POST['ib_return']) ? wp_unslash($_POST['ib_return']) : '';
+        $redirect = $return
+            ? wp_validate_redirect($return, IB_UI::url('dashboard'))
+            : (wp_get_raw_referer() ?: IB_UI::url('dashboard'));
         if (!isset($_POST['ib_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ib_nonce'])), 'ib_action')) {
             IB_UI::flash('error', 'Your session expired. Please try again.');
             wp_safe_redirect($redirect);
