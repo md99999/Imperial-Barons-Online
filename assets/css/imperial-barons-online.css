@@ -38,6 +38,11 @@
 .ib-label { color: var(--ib-dim); }
 .ib-stat { white-space: nowrap; }
 
+.ib-turnbar { padding: 7px 12px; margin-bottom: 8px; border: 1px dashed var(--ib-border); border-left: 3px solid var(--ib-yellow); border-radius: 3px; background: var(--ib-panel); font-size: .85em; line-height: 1.6; }
+.ib-turnbar strong { color: var(--ib-yellow); }
+.ib-turnbar-empty { border-left-color: var(--ib-red); }
+.ib-turnbar-empty strong { color: var(--ib-red); }
+
 .ib-nav, .ib-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
 .ib-nav a, .ib-tabs a { padding: 5px 11px; border: 1px solid var(--ib-border); border-radius: 3px; text-decoration: none; color: var(--ib-text); background: var(--ib-panel); }
 .ib-nav a:hover, .ib-tabs a:hover { border-color: var(--ib-cyan); color: var(--ib-cyan); }

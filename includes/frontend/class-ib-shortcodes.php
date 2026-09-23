@@ -41,6 +41,7 @@ class IB_Shortcodes {
             $p = IB_Player::current();
             if ($p) {
                 echo IB_UI::status_bar($p);
+                echo IB_UI::turn_bar($p);
                 echo IB_UI::nav($key, $p);
             }
             echo IB_UI::render_flashes();

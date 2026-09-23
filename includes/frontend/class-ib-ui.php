@@ -11,16 +11,16 @@ class IB_UI {
      * then navigation, then your holdings, then the social pages.
      */
     const PAGES = [
-        'dashboard' => ['Imperial Barons Online Home', 'imperial-barons-online', 'ib_dashboard', 'Home'],
-        'sector'    => ['Sector', 'imperial-barons-online-sector', 'ib_sector', 'Sector'],
-        'port'      => ['Port', 'imperial-barons-online-port', 'ib_port', 'Port'],
-        'map'       => ['Galaxy Map', 'imperial-barons-online-map', 'ib_map', 'Map'],
-        'computer'  => ['Computer', 'imperial-barons-online-computer', 'ib_computer', 'Computer'],
-        'planet'    => ['Planet', 'imperial-barons-online-planet', 'ib_planet', 'Planet'],
-        'ship'      => ['Ship Status', 'imperial-barons-online-ship', 'ib_ship', 'Ship'],
-        'team'      => ['Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
-        'messages'  => ['Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
-        'rankings'  => ['Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
+        'dashboard' => ['IBO - Home', 'imperial-barons-online', 'ib_dashboard', 'Home'],
+        'sector'    => ['IBO - Sector', 'imperial-barons-online-sector', 'ib_sector', 'Sector'],
+        'port'      => ['IBO - Port', 'imperial-barons-online-port', 'ib_port', 'Port'],
+        'map'       => ['IBO - Galaxy Map', 'imperial-barons-online-map', 'ib_map', 'Map'],
+        'computer'  => ['IBO - Computer', 'imperial-barons-online-computer', 'ib_computer', 'Computer'],
+        'planet'    => ['IBO - Planet', 'imperial-barons-online-planet', 'ib_planet', 'Planet'],
+        'ship'      => ['IBO - Ship Status', 'imperial-barons-online-ship', 'ib_ship', 'Ship'],
+        'team'      => ['IBO - Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
+        'messages'  => ['IBO - Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
+        'rankings'  => ['IBO - Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
     ];
 
     public static function url($key, $args = []) {
@@ -120,7 +120,8 @@ class IB_UI {
         $items = [
             'Pilot' => esc_html($p->alias_name),
             'Sector' => '<a href="' . esc_url(self::url('sector')) . '">' . (int) $p->sector_id . '</a>',
-            'Turns' => '<span class="' . ((int) $p->turns_remaining ? 'ib-good' : 'ib-bad') . '">' . (int) $p->turns_remaining . '</span>',
+            'Turns' => '<span class="' . ((int) $p->turns_remaining ? 'ib-good' : 'ib-bad') . '">' . (int) $p->turns_remaining
+                . '</span> of ' . (int) IB_Settings::get('turns_per_day'),
             'Credits' => IB_Game::fmt($p->credits),
             'Holds' => IB_Player::holds_used($p) . '/' . (int) $p->cargo_holds,
             'Fighters' => IB_Game::fmt($p->fighters),
@@ -132,6 +133,40 @@ class IB_UI {
             $html .= '<span class="ib-stat"><span class="ib-label">' . esc_html($label) . '</span> ' . $value . '</span>';
         }
         return $html . '</div>';
+    }
+
+    /**
+     * A one-line reminder of what a turn is: what each action costs, what is free,
+     * and when turns come back. Shown on every game page under the status bar.
+     */
+    public static function turn_bar($p) {
+        $s = IB_Settings::all();
+        $left = (int) $p->turns_remaining;
+        $reset = new DateTime('tomorrow', wp_timezone());
+        $in = human_time_diff(current_time('timestamp'), $reset->getTimestamp());
+
+        $costs = [
+            sprintf('warp to another sector %s', self::turns($s['move_turn_cost'])),
+            sprintf('dock at a port %s', self::turns($s['dock_turn_cost'])),
+            sprintf('attack %s', self::turns($s['attack_turn_cost'])),
+        ];
+        $html = '<div class="ib-turnbar' . ($left ? '' : ' ib-turnbar-empty') . '">';
+        $html .= $left
+            ? sprintf('<strong>%d of %d turns left today.</strong>', $left, (int) $s['turns_per_day'])
+            : '<strong>No turns left today.</strong> You can still trade while docked, manage planets, and use the Computer, Map and Messages.';
+        $html .= ' <span class="ib-dim">Costs a turn:</span> ' . implode(', ', $costs) . '.';
+        $html .= ' <span class="ib-dim">Free:</span> buying and selling while docked, haggling, undocking, landing and planet transfers,'
+            . ' launching survey drones, plotting courses, messages and rankings.';
+        if ((int) $p->docked_port_id) {
+            $html .= ' <span class="ib-good">You are docked: trade as often as you like, for no turns, until you warp away.</span>';
+        }
+        $html .= sprintf(' <span class="ib-dim">Turns reset in %s (midnight site time); unused turns do not carry over.</span>', esc_html($in));
+        return $html . '</div>';
+    }
+
+    private static function turns($n) {
+        $n = (int) $n;
+        return $n === 1 ? '1 turn' : $n . ' turns';
     }
 
     public static function nav($current, $p) {

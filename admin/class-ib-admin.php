@@ -110,11 +110,18 @@ class IB_Admin {
     private static function do_setup_pages() {
         $ids = get_option('ib_page_ids', []);
         $created = 0;
+        $renamed = 0;
         foreach (IB_UI::PAGES as $key => $def) {
             list($title, $slug, $shortcode) = $def;
             $existing = get_page_by_path($slug);
             if ($existing && $existing->post_status !== 'trash') {
                 $ids[$key] = $existing->ID;
+                // Bring pages from earlier versions up to the current "IBO - ..." titles so the
+                // game's pages are easy to pick out in the Pages list. Slugs are left alone.
+                if ($existing->post_title !== $title) {
+                    wp_update_post(['ID' => $existing->ID, 'post_title' => $title]);
+                    $renamed++;
+                }
                 continue;
             }
             $ids[$key] = wp_insert_post([
@@ -141,13 +148,13 @@ class IB_Admin {
             }
         }
         $item_id = wp_update_nav_menu_item($menu_id, $home_item, [
-            'menu-item-title' => IB_UI::PAGES['dashboard'][0], 'menu-item-object' => 'page',
+            'menu-item-title' => IB_Settings::get('game_name'), 'menu-item-object' => 'page',
             'menu-item-object-id' => $ids['dashboard'], 'menu-item-type' => 'post_type',
             'menu-item-status' => 'publish', 'menu-item-parent-id' => 0, 'menu-item-position' => 1,
         ]);
         if (is_wp_error($item_id)) throw new IB_Game_Exception('Could not add the menu item: ' . $item_id->get_error_message());
 
-        $msg = sprintf('%d page(s) created; the "Imperial Barons Online" menu (a single Home link) is ready.', $created);
+        $msg = sprintf('%d page(s) created, %d renamed to the "IBO - ..." titles; the "Imperial Barons Online" menu (a single Home link) is ready.', $created, $renamed);
         if (function_exists('wp_is_block_theme') && wp_is_block_theme() && self::post('block_nav')) {
             self::build_block_navigation($ids);
             $msg .= ' A matching block navigation menu was created for your block theme\'s header.'
@@ -171,7 +178,7 @@ class IB_Admin {
      */
     private static function build_block_navigation(array $ids) {
         $content = get_comment_delimited_block_content('core/navigation-link', [
-            'label' => IB_UI::PAGES['dashboard'][0], 'type' => 'page', 'id' => (int) $ids['dashboard'],
+            'label' => IB_Settings::get('game_name'), 'type' => 'page', 'id' => (int) $ids['dashboard'],
             'url' => get_permalink($ids['dashboard']), 'kind' => 'post-type',
         ], '');
 

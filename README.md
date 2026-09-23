@@ -84,7 +84,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    > a new game.
 4. **Create the game pages.** Go to **Imperial Barons Online → Dashboard** and click
    **Create pages & menu**. This creates the ten game pages below, each containing its shortcode,
-   and a site menu with a single **Imperial Barons Online Home** link. On block themes, leave
+   and a site menu with a single **Imperial Barons Online** link to the home page. On block themes, leave
    "Show this menu in the theme header" ticked so the header shows it. Players move between game
    pages using the in-game navigation bar on every game page.
 5. **Let players in.** Only logged-in WordPress users can play, and each account gets one pilot.
@@ -92,7 +92,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
    left as *Subscriber*). If registration is open, protect the registration form from bots with an
    anti-bot plugin such as *Simple Cloudflare Turnstile*. Players sign in, open
-   **Imperial Barons Online Home**, and create a pilot.
+   the **IBO - Home** page, and create a pilot.
 6. **Set up cron** so the hourly and daily game jobs run on time. See
    [Scheduled maintenance (cron)](#scheduled-maintenance-cron) below.
 7. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
@@ -100,20 +100,22 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
 
 ### Game pages
 
-Pages are listed in the in-game navigation order.
+Pages are listed in the in-game navigation order. Titles carry an "IBO - " prefix so the game's
+pages stand out in the WordPress Pages list; running *Create pages & menu* again renames pages
+created by earlier versions.
 
 | Page | Slug | Shortcode |
 |---|---|---|
-| Imperial Barons Online Home | `imperial-barons-online` | `[ib_dashboard]` |
-| Sector | `imperial-barons-online-sector` | `[ib_sector]` |
-| Port | `imperial-barons-online-port` | `[ib_port]` |
-| Galaxy Map | `imperial-barons-online-map` | `[ib_map]` |
-| Computer | `imperial-barons-online-computer` | `[ib_computer]` |
-| Planet | `imperial-barons-online-planet` | `[ib_planet]` |
-| Ship Status | `imperial-barons-online-ship` | `[ib_ship]` |
-| Team | `imperial-barons-online-team` | `[ib_team]` |
-| Messages | `imperial-barons-online-messages` | `[ib_messages]` |
-| Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
+| IBO - Home | `imperial-barons-online` | `[ib_dashboard]` |
+| IBO - Sector | `imperial-barons-online-sector` | `[ib_sector]` |
+| IBO - Port | `imperial-barons-online-port` | `[ib_port]` |
+| IBO - Galaxy Map | `imperial-barons-online-map` | `[ib_map]` |
+| IBO - Computer | `imperial-barons-online-computer` | `[ib_computer]` |
+| IBO - Planet | `imperial-barons-online-planet` | `[ib_planet]` |
+| IBO - Ship Status | `imperial-barons-online-ship` | `[ib_ship]` |
+| IBO - Team | `imperial-barons-online-team` | `[ib_team]` |
+| IBO - Messages | `imperial-barons-online-messages` | `[ib_messages]` |
+| IBO - Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
 
@@ -248,7 +250,10 @@ did, or *"skipped: it already ran…"* if the job ran recently.
 
 ## How to play
 
-- **Turns.** Each warp costs 1 turn and docking at a port costs 1 turn; trading while docked is free.
+- **Turns.** Only three actions cost turns: warping to another sector (1), docking at a port (1, charged
+  once, after which trading and haggling are free until you leave) and attacking (1). Landing, cargo
+  transfers, bastions, drones, the Computer, the Map and messages are all free. Turns reset at midnight
+  (site time) and do not carry over; every game page shows a bar with the turns you have left.
 - **Trading.** A port's class is three letters showing whether it **B**uys or **S**ells Ferrium Ore,
   Biostock and Machinery, in that order. Buy where a port sells, and sell where another port buys.
   Well-stocked ports sell cheaply; ports with strong demand pay the most.
@@ -272,7 +277,7 @@ did, or *"skipped: it already ran…"* if the job ran recently.
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
   Freetrader and are grounded until tomorrow.
 
-The full guide is under **How to play** on the Imperial Barons Online Home page.
+The full guide is under **How to play** on the IBO - Home page.
 
 ---
 
