@@ -84,9 +84,11 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    > a new game.
 4. **Create the game pages.** Go to **Imperial Barons Online → Dashboard** and click
    **Create pages & menu**. This creates the ten game pages below, each containing its shortcode,
-   and a site menu with a single **Imperial Barons Online** link to the home page. On block themes, leave
-   "Show this menu in the theme header" ticked so the header shows it. Players move between game
-   pages using the in-game navigation bar on every game page.
+   and a site menu holding a single **Imperial Barons Online** link to the home page. Players move
+   between game pages with the in-game navigation bar, so the menu never lists the other pages.
+   **Assign menu to theme location** decides where that link appears: *Don't assign* (the default),
+   one of your theme's menu locations, or, on block themes such as Twenty Twenty-Five, *Theme header*,
+   which creates a matching block navigation menu.
 5. **Let players in.** Only logged-in WordPress users can play, and each account gets one pilot.
    Other players see only the pilot's alias, never the WordPress username. Either create user
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role

@@ -46,26 +46,29 @@ $locations = get_registered_nav_menus();
         </tbody>
     </table>
     <?php echo IB_Admin::form_open('setup_pages'); ?>
-        <?php if (function_exists('wp_is_block_theme') && wp_is_block_theme()) : ?>
-            <p>
-                <label><input type="checkbox" name="block_nav" value="1" checked>
-                    Show this menu in the theme header (a single Imperial Barons Online Home link)</label><br>
-                <span class="description">Your theme is a block theme, so its header uses a Navigation block rather than classic menus.
-                    This creates an "Imperial Barons Online" block navigation menu, which the header uses unless another menu has been chosen for it in the Site Editor.</span>
-            </p>
-        <?php endif; ?>
-        <?php if ($locations) : ?>
+        <?php $block_theme = function_exists('wp_is_block_theme') && wp_is_block_theme(); ?>
         <p>
-            <label>Assign menu to theme location:
-                <select name="menu_location">
-                    <option value="">Don't assign</option>
-                    <?php foreach ($locations as $slug => $label) : ?>
-                        <option value="<?php echo esc_attr($slug); ?>"><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
+            <label for="ib-menu-location">Assign menu to theme location:</label>
+            <select id="ib-menu-location" name="menu_location">
+                <option value="">Don't assign</option>
+                <?php if ($block_theme) : ?>
+                    <option value="block_header">Theme header (block navigation menu)</option>
+                <?php endif; ?>
+                <?php foreach ($locations as $slug => $label) : ?>
+                    <option value="<?php echo esc_attr($slug); ?>"><?php echo esc_html($label); ?></option>
+                <?php endforeach; ?>
+            </select>
         </p>
-        <?php endif; ?>
+        <p class="description" style="max-width:760px">
+            The menu holds a single link to the game's home page; players use the in-game navigation bar for the rest.
+            Leave this on <em>Don't assign</em> to place the link yourself.
+            <?php if ($block_theme) : ?>
+                Your theme is a block theme, so its header uses a Navigation block rather than a classic menu location:
+                choose <em>Theme header</em> to create an "Imperial Barons Online" block navigation menu for it.
+            <?php elseif (!$locations) : ?>
+                Your theme registers no menu locations, so the link must be placed manually.
+            <?php endif; ?>
+        </p>
         <?php submit_button('Create pages & menu', 'primary', 'submit', false); ?>
     </form>
 </div>

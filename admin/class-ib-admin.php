@@ -154,18 +154,22 @@ class IB_Admin {
         ]);
         if (is_wp_error($item_id)) throw new IB_Game_Exception('Could not add the menu item: ' . $item_id->get_error_message());
 
-        $msg = sprintf('%d page(s) created, %d renamed to the "IBO - ..." titles; the "Imperial Barons Online" menu (a single Home link) is ready.', $created, $renamed);
-        if (function_exists('wp_is_block_theme') && wp_is_block_theme() && self::post('block_nav')) {
-            self::build_block_navigation($ids);
-            $msg .= ' A matching block navigation menu was created for your block theme\'s header.'
-                . ' If the header still shows a different menu, choose "Imperial Barons Online" in its Navigation block in the Site Editor.';
-        }
+        $msg = sprintf('%d page(s) created, %d renamed to the "IBO - ..." titles; the "Imperial Barons Online" menu (a single home page link) is ready.', $created, $renamed);
+
+        // Where the link should appear is the admin's choice: nowhere (the default), a block
+        // theme's header, or one of the theme's classic menu locations.
         $location = sanitize_key(self::post('menu_location'));
-        if ($location) {
+        if ($location === 'block_header') {
+            self::build_block_navigation($ids);
+            $msg .= ' A block navigation menu was created for your theme\'s header.'
+                . ' If the header still shows a different menu, choose "Imperial Barons Online" in its Navigation block in the Site Editor.';
+        } elseif ($location) {
             $locations = get_theme_mod('nav_menu_locations', []);
             $locations[$location] = $menu_id;
             set_theme_mod('nav_menu_locations', $locations);
             $msg .= ' It has been assigned to the "' . $location . '" menu location.';
+        } else {
+            $msg .= ' It was not assigned to a theme location; add it wherever you like under Appearance.';
         }
         IB_Log::admin('setup', $msg);
         self::notice('success', $msg);
