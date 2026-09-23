@@ -92,7 +92,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
    left as *Subscriber*). If registration is open, protect the registration form from bots with an
    anti-bot plugin such as *Simple Cloudflare Turnstile*. Players sign in, open
-   the **IBO - Home** page, and create a pilot.
+   the **IBO – Imperial Barons** page, and create a pilot.
 6. **Set up cron** so the hourly and daily game jobs run on time. See
    [Scheduled maintenance (cron)](#scheduled-maintenance-cron) below.
 7. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
@@ -106,7 +106,7 @@ created by earlier versions.
 
 | Page | Slug | Shortcode |
 |---|---|---|
-| IBO - Home | `imperial-barons-online` | `[ib_dashboard]` |
+| IBO – Imperial Barons | `imperial-barons-online` | `[ib_dashboard]` |
 | IBO - Sector | `imperial-barons-online-sector` | `[ib_sector]` |
 | IBO - Port | `imperial-barons-online-port` | `[ib_port]` |
 | IBO - Galaxy Map | `imperial-barons-online-map` | `[ib_map]` |
@@ -277,7 +277,7 @@ did, or *"skipped: it already ran…"* if the job ran recently.
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
   Freetrader and are grounded until tomorrow.
 
-The full guide is under **How to play** on the IBO - Home page.
+The full guide is under **How to play** on the IBO – Imperial Barons page.
 
 ---
 
