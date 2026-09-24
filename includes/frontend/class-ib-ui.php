@@ -180,6 +180,25 @@ class IB_UI {
         return $html . '</nav>';
     }
 
+    /** Footer status bar: a quick recap of the pilot's standing, plus the site credit. */
+    public static function footer_bar($p) {
+        $items = [];
+        if ($p) {
+            $items['Pilot'] = esc_html(IB_Game::rank_title($p->experience) . ' ' . $p->alias_name);
+            $items['Sector'] = (int) $p->sector_id;
+            $items['Turns'] = (int) $p->turns_remaining . ' of ' . (int) IB_Settings::get('turns_per_day');
+            $items['Credits'] = IB_Game::fmt($p->credits);
+            $items['Net worth'] = IB_Game::fmt(IB_Player::net_worth($p));
+        }
+        $html = '<div class="ib-footer"><span class="ib-footer-stats">';
+        foreach ($items as $label => $value) {
+            $html .= '<span class="ib-stat"><span class="ib-label">' . esc_html($label) . '</span> ' . $value . '</span> ';
+        }
+        $html .= '</span><span class="ib-stat">' . esc_html(IB_Settings::get('game_name')) . ' v' . esc_html(IB_VERSION)
+            . ' &middot; <a href="https://maddogproductions.online" target="_blank" rel="noopener">maddogproductions.online</a></span>';
+        return $html . '</div>';
+    }
+
     public static function port_badge($port) {
         if (!$port) return '';
         $code = IB_Ports::class_code($port->port_class);

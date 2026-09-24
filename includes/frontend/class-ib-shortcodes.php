@@ -50,6 +50,7 @@ class IB_Shortcodes {
             } else {
                 include IB_PATH . 'includes/frontend/views/' . $key . '.php';
             }
+            echo IB_UI::footer_bar($p);
         }
         echo '</div>';
         return ob_get_clean();
