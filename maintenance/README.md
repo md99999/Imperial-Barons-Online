@@ -13,8 +13,13 @@ Each script finds and loads WordPress by itself, so it can be run from any direc
 php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/hourly_maintenance.php
 ```
 
-Both jobs skip themselves if they already ran recently, so it is safe to use these scripts
-alongside WP-Cron.
+Running these alongside WP-Cron is safe: each job takes a database lock before it does anything,
+so only one run of a kind happens at a time whatever started it, a run arriving while another is
+working stands down, and each job refuses to run twice in the same period. WP-Cron does not need
+to be disabled.
+
+**Imperial Barons Online → Maintenance** in wp-admin shows these commands with your site's real
+paths, ready to copy into cPanel or a crontab.
 
 For full cron setup instructions (cPanel, Plesk, crontab, Windows Task Scheduler, and the
 recommended alternative of triggering `wp-cron.php`), see

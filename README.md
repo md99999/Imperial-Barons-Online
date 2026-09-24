@@ -134,45 +134,40 @@ The game relies on two scheduled jobs:
 
 On activation the plugin schedules both jobs with **WP-Cron**, WordPress's built-in scheduler.
 WP-Cron is not a real clock: it only runs when someone visits the site. On a quiet site, ports may
-not restock and planets may not produce for hours at a time. For a live game, set up a **real cron
-job** on your server. This is done in your hosting control panel or on the server itself, outside
-WordPress.
+not restock and planets may not produce for hours at a time. For a live game, add a **real cron job**
+on your server, from your hosting control panel or the server itself.
 
-Some things are safe regardless of your setup:
+**Running WP-Cron and a real cron job together is safe.** Each job takes a database lock before it
+does anything, so only one run of a kind happens at a time no matter what started it, and a run that
+arrives while another is working stands down rather than repeating it. Each job also refuses to run
+twice in the same period. You do not need to set `DISABLE_WP_CRON`, which many shared hosts do not
+allow anyway.
+
+Two more safeguards:
 - **Turns** reset the first time each pilot visits on a new day, even if cron never runs.
-- **Both jobs guard against double runs.** The hourly job skips itself if it ran in the last
-  50 minutes, and the daily job runs at most once per day, so overlapping schedules won't double
-  production.
-- **You can run either job at any time** from **Imperial Barons Online → Maintenance**, which
-  also shows each job's last and next run.
+- **You can run either job at any time** from **Imperial Barons Online → Maintenance**, which also
+  shows each job's last and next run.
 
-#### Choose one method
+> **Tip:** the Maintenance screen prints all of the commands below with your site's real URL and
+> paths filled in, ready to copy into cPanel or a crontab.
 
-**Method A (recommended): trigger WordPress's scheduler every 5 minutes.** This runs *all* of your
-site's scheduled tasks on time, including this game's jobs, WordPress updates checks and scheduled
-posts. WordPress works out the site timezone itself, so the daily job runs at your local midnight.
+#### Recommended: trigger WordPress's scheduler every 5 minutes
 
-1. Stop visitors from triggering WP-Cron. Add this line to `wp-config.php`, above the line that
-   says *"That's all, stop editing!"*:
-   ```php
-   define('DISABLE_WP_CRON', true);
-   ```
-2. Add a cron job that runs every 5 minutes, using **one** of these commands (replace
-   `https://example.com` with your site's address):
-   ```bash
-   wget -q -O - "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
-   ```
-   ```bash
-   curl -s "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
-   ```
-   If WP-CLI is installed on your server, this command does the same without a web request:
-   ```bash
-   cd /path/to/wordpress && wp cron event run --due-now >/dev/null 2>&1
-   ```
+This runs *all* of your site's scheduled tasks on time, including this game's jobs, update checks and
+scheduled posts, and WordPress works out the site timezone itself. Schedule this every 5 minutes,
+replacing `https://example.com` with your site's address:
 
-**Method B: run the game's own scripts directly.** Use this if your host blocks web requests
-from cron, or you want the game jobs on their own schedule. The plugin includes two command-line
-scripts that load WordPress and run one job each:
+```bash
+curl -s "https://example.com/wp-cron.php?doing_wp_cron" > /dev/null 2>&1
+```
+
+Use `wget -q -O - "https://example.com/wp-cron.php?doing_wp_cron" > /dev/null 2>&1` if the host has no
+`curl`, or, where WP-CLI is installed, `cd /path/to/wordpress && wp cron event run --due-now`.
+
+#### Alternative: run the game's scripts directly
+
+Use this if your host blocks cron from making web requests, or you want the game's jobs on their own
+schedule. Run the first hourly and the second once a day at your site's midnight:
 
 ```bash
 php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/hourly_maintenance.php
@@ -181,41 +176,39 @@ php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/hou
 php /path/to/wordpress/wp-content/plugins/imperial-barons-online/maintenance/daily_maintenance.php
 ```
 
-Schedule the hourly script at minute 0 of every hour, and the daily script once a day at your
-site's midnight. If you also use `DISABLE_WP_CRON`, still add a Method A job so WordPress's own
-tasks keep running. The double-run guard makes it safe for both to be active.
+These run only the game's jobs, so keep the 5-minute job as well where you can, to keep WordPress's
+own tasks running.
 
-> **Server time vs. site time:** cron schedules use the *server's* clock, which is often UTC,
-> while the game uses the timezone in **Settings → General**. For Method B, set the daily job's
-> hour to your site's midnight in server time. For example, a US Eastern site on a UTC server
-> would run it at 05:00 (04:00 during daylight saving time). Method A handles this automatically.
+> **Server time vs. site time:** cron schedules use the *server's* clock, which is often UTC, while
+> the game uses the timezone in **Settings → General**. For the daily script, set the hour that matches
+> your site's midnight: a US Eastern site on a UTC server would use 05:00 (04:00 in daylight saving
+> time). The 5-minute job needs no such adjustment.
 
 #### Setting it up on common hosts
 
 **cPanel** (most shared hosting):
 1. Log in to cPanel and open **Advanced → Cron Jobs**.
 2. Under **Add New Cron Job**, choose **Once Per Five Minutes** from *Common Settings*
-   (for Method B's hourly script choose **Once Per Hour**, and for the daily script
-   **Once Per Day** and then adjust the hour).
+   (for the game's own scripts choose **Once Per Hour** and **Once Per Day** instead).
 3. Paste the command into **Command** and click **Add New Cron Job**.
-4. Paths in cPanel usually look like `/home/YOUR-CPANEL-USER/public_html/...`. For Method B,
-   the PHP binary is usually `/usr/local/bin/php`. Your host's documentation or support can confirm both.
+4. Paths in cPanel usually look like `/home/YOUR-CPANEL-USER/public_html/...`, and command-line PHP
+   is usually `/usr/local/bin/php`. The Maintenance screen prints both filled in for your site.
 
 **Plesk:**
 1. Open **Websites & Domains → Scheduled Tasks → Add Task**.
-2. For Method A choose **Fetch a URL** and enter `https://example.com/wp-cron.php?doing_wp_cron`;
-   for Method B choose **Run a PHP script** and select the script file.
+2. Choose **Fetch a URL** and enter `https://example.com/wp-cron.php?doing_wp_cron`, or choose
+   **Run a PHP script** and select one of the game's maintenance scripts.
 3. Set the schedule (every 5 minutes, hourly or daily) and click **OK**.
 
 **Linux server or VPS (crontab):**
 1. Run `crontab -e` as the user that owns the WordPress files (often `www-data`:
    `sudo crontab -u www-data -e`).
-2. Add the lines for your chosen method, then save:
+2. Add the lines you need, then save:
    ```
-   # Method A: every 5 minutes
-   */5 * * * * wget -q -O - "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
+   # every 5 minutes: runs everything WordPress has scheduled
+   */5 * * * * curl -s "https://example.com/wp-cron.php?doing_wp_cron" >/dev/null 2>&1
 
-   # Method B: hourly at minute 0, daily at 05:00 server time
+   # optional: the game's own jobs, hourly at minute 0 and daily at 05:00 server time
    0 * * * * /usr/bin/php /var/www/html/wp-content/plugins/imperial-barons-online/maintenance/hourly_maintenance.php >/dev/null 2>&1
    0 5 * * * /usr/bin/php /var/www/html/wp-content/plugins/imperial-barons-online/maintenance/daily_maintenance.php >/dev/null 2>&1
    ```
@@ -224,10 +217,10 @@ tasks keep running. The double-run guard makes it safe for both to be active.
 **Windows server (Task Scheduler):**
 1. Open **Task Scheduler → Create Basic Task**.
 2. Set the trigger to **Daily**. In the task's properties, under **Triggers → Edit**, tick
-   **Repeat task every** and choose 5 minutes (Method A) or 1 hour (Method B hourly).
-3. For the action choose **Start a program**. For Method A, program `curl.exe` with
-   arguments `-s "https://example.com/wp-cron.php?doing_wp_cron"`. For Method B, program
-   `C:\path\to\php.exe` with the full path to the script as the argument.
+   **Repeat task every** and choose 5 minutes (or 1 hour for the game's hourly script).
+3. For the action choose **Start a program**: either `curl.exe` with arguments
+   `-s "https://example.com/wp-cron.php?doing_wp_cron"`, or `C:\path\to\php.exe` with the full path
+   to a maintenance script as the argument.
 
 **Managed WordPress hosts** (WP Engine, Kinsta, SiteGround and others) often already run a real
 cron for WordPress, or offer a switch for it. Check your host's documentation before adding your own.
@@ -238,8 +231,9 @@ and you can use the **Run now** buttons on the Maintenance screen.
 #### Checking that it works
 
 Open **Imperial Barons Online → Maintenance**. After an hour or so, **Last run** for the hourly
-job should keep advancing. When you run a Method B script by hand in a terminal, it prints what it
-did, or *"skipped: it already ran…"* if the job ran recently.
+job should keep advancing. Running a maintenance script by hand in a terminal prints what it did,
+or *"skipped: it already ran…"* if the job already ran this period, or *"already running elsewhere"*
+if another run currently holds the lock.
 
 ### Updating and uninstalling
 
