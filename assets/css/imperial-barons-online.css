@@ -1,4 +1,10 @@
-/* Imperial Barons Online: an ANSI-terminal flavoured skin, scoped to .ib-game so it doesn't disturb the theme. */
+/*
+ * Imperial Barons Online: an ANSI-terminal flavoured skin, scoped to .ib-game so it doesn't disturb the theme.
+ *
+ * Colour and font rules repeat the wrapper class (.ib-game.ib-game) to outrank theme rules such as
+ * Twenty Twenty-Five's ".wp-block-post-content p", which would otherwise paint the game's text in the
+ * theme's dark grey. Utility classes repeat it too, so they still win inside the game.
+ */
 .ib-game {
   --ib-bg: #05070d;
   --ib-panel: #0c1220;
@@ -26,64 +32,87 @@
   box-sizing: border-box;
 }
 .ib-game *, .ib-game *::before, .ib-game *::after { box-sizing: border-box; }
-.ib-game h2, .ib-game h3 { font-family: var(--ib-font); color: var(--ib-cyan); margin: 0 0 .6em; line-height: 1.25; }
-.ib-game h2 { font-size: 1.3em; }
-.ib-game h3 { font-size: 1.05em; color: var(--ib-yellow); }
-.ib-game p { margin: 0 0 .8em; }
-.ib-game a { color: var(--ib-cyan); }
-.ib-game a:hover { color: var(--ib-yellow); }
+
+/* Base typography: force the game's own colours and monospace font over the theme's. */
+.ib-game.ib-game p, .ib-game.ib-game li, .ib-game.ib-game td, .ib-game.ib-game th,
+.ib-game.ib-game dd, .ib-game.ib-game dt, .ib-game.ib-game label, .ib-game.ib-game summary,
+.ib-game.ib-game blockquote, .ib-game.ib-game figcaption, .ib-game.ib-game strong, .ib-game.ib-game em {
+  color: var(--ib-text);
+  font-family: var(--ib-font);
+}
+.ib-game.ib-game h1, .ib-game.ib-game h2, .ib-game.ib-game h3, .ib-game.ib-game h4 {
+  font-family: var(--ib-font); color: var(--ib-cyan); margin: 0 0 .6em; line-height: 1.25;
+}
+.ib-game.ib-game h2 { font-size: 1.3em; }
+.ib-game.ib-game h3 { font-size: 1.05em; color: var(--ib-yellow); }
+.ib-game.ib-game p { margin: 0 0 .8em; }
+.ib-game.ib-game a { color: var(--ib-cyan); }
+.ib-game.ib-game a:hover, .ib-game.ib-game a:focus { color: var(--ib-yellow); }
+
+/* Utility colours, one step more specific again so they win on any element. */
+.ib-game.ib-game .ib-dim { color: var(--ib-dim); }
+.ib-game.ib-game .ib-good { color: var(--ib-green); }
+.ib-game.ib-game .ib-bad { color: var(--ib-red); }
+.ib-game.ib-game .ib-buy { color: var(--ib-green); }
+.ib-game.ib-game .ib-sell { color: var(--ib-cyan); }
+.ib-game.ib-game .ib-special { color: var(--ib-magenta); font-weight: bold; }
+.ib-game.ib-game .ib-beacon { color: var(--ib-magenta); }
+.ib-game.ib-game .ib-big { font-size: 2em; color: var(--ib-yellow); margin: 0; }
+.ib-small { font-size: .85em; }
+.ib-port-code { font-weight: bold; letter-spacing: .1em; }
 
 .ib-title { color: var(--ib-magenta); font-weight: bold; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 10px; }
 
 .ib-status { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 12px; background: var(--ib-panel); border: 1px solid var(--ib-border); border-radius: 4px; margin-bottom: 8px; font-size: .9em; }
-.ib-label { color: var(--ib-dim); }
+.ib-game.ib-game .ib-label { color: var(--ib-dim); }
 .ib-stat { white-space: nowrap; }
 
 .ib-turnbar { padding: 7px 12px; margin-bottom: 8px; border: 1px dashed var(--ib-border); border-left: 3px solid var(--ib-yellow); border-radius: 3px; background: var(--ib-panel); font-size: .85em; line-height: 1.6; }
-.ib-turnbar strong { color: var(--ib-yellow); }
+.ib-game.ib-game .ib-turnbar strong { color: var(--ib-yellow); }
 .ib-turnbar-empty { border-left-color: var(--ib-red); }
-.ib-turnbar-empty strong { color: var(--ib-red); }
+.ib-game.ib-game .ib-turnbar-empty strong { color: var(--ib-red); }
 
 .ib-nav, .ib-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
-.ib-nav a, .ib-tabs a { padding: 5px 11px; border: 1px solid var(--ib-border); border-radius: 3px; text-decoration: none; color: var(--ib-text); background: var(--ib-panel); }
-.ib-nav a:hover, .ib-tabs a:hover { border-color: var(--ib-cyan); color: var(--ib-cyan); }
-.ib-nav a.ib-active, .ib-tabs a.ib-active { background: var(--ib-cyan); color: var(--ib-ink); border-color: var(--ib-cyan); }
-.ib-badge { display: inline-block; min-width: 1.4em; padding: 0 .35em; border-radius: 1em; background: var(--ib-red); color: var(--ib-ink); font-weight: bold; font-size: .8em; text-align: center; }
+.ib-game.ib-game .ib-nav a, .ib-game.ib-game .ib-tabs a { padding: 5px 11px; border: 1px solid var(--ib-border); border-radius: 3px; text-decoration: none; color: var(--ib-text); background: var(--ib-panel); }
+.ib-game.ib-game .ib-nav a:hover, .ib-game.ib-game .ib-tabs a:hover { border-color: var(--ib-cyan); color: var(--ib-cyan); }
+.ib-game.ib-game .ib-nav a.ib-active, .ib-game.ib-game .ib-tabs a.ib-active { background: var(--ib-cyan); color: var(--ib-ink); border-color: var(--ib-cyan); }
+.ib-game.ib-game .ib-badge { display: inline-block; min-width: 1.4em; padding: 0 .35em; border-radius: 1em; background: var(--ib-red); color: var(--ib-ink); font-weight: bold; font-size: .8em; text-align: center; }
 
 .ib-panel { background: var(--ib-panel); border: 1px solid var(--ib-border); border-radius: 4px; padding: 14px 16px; margin-bottom: 14px; }
-.ib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.ib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
 .ib-grid > .ib-panel { margin-bottom: 0; }
 .ib-grid + .ib-panel, .ib-grid + .ib-grid { margin-top: 14px; }
-.ib-grid { margin-bottom: 14px; }
 
 .ib-flash { padding: 10px 14px; border-left: 4px solid; margin-bottom: 10px; background: var(--ib-panel); }
-.ib-flash-success { border-color: var(--ib-green); color: var(--ib-green); }
-.ib-flash-warning { border-color: var(--ib-yellow); color: var(--ib-yellow); }
-.ib-flash-error { border-color: var(--ib-red); color: var(--ib-red); }
+.ib-game.ib-game .ib-flash-success { border-color: var(--ib-green); color: var(--ib-green); }
+.ib-game.ib-game .ib-flash-warning { border-color: var(--ib-yellow); color: var(--ib-yellow); }
+.ib-game.ib-game .ib-flash-error { border-color: var(--ib-red); color: var(--ib-red); }
 
-.ib-dim { color: var(--ib-dim); }
-.ib-small { font-size: .85em; }
-.ib-big { font-size: 2em; color: var(--ib-yellow); margin: 0; }
-.ib-good { color: var(--ib-green); }
-.ib-bad { color: var(--ib-red); }
-.ib-buy { color: var(--ib-green); }
-.ib-sell { color: var(--ib-cyan); }
-.ib-special { color: var(--ib-magenta); font-weight: bold; }
-.ib-port-code { font-weight: bold; letter-spacing: .1em; }
-.ib-beacon { color: var(--ib-magenta); }
-
-.ib-btn, .ib-game button.ib-btn {
+/*
+ * Buttons. These are a mix of <a> and <button>, so the rules repeat the wrapper class to beat both
+ * the theme's link colours and the game's own link rule: without that, a link-styled button showed
+ * cyan text on its cyan background, and yellow on yellow when hovered.
+ */
+.ib-game.ib-game .ib-btn {
   display: inline-block; font-family: var(--ib-font); font-size: .92em; line-height: 1.2;
   padding: 6px 12px; border-radius: 3px; border: 1px solid var(--ib-cyan);
   background: var(--ib-cyan); color: var(--ib-ink); cursor: pointer; text-decoration: none; margin: 2px 0;
 }
-.ib-btn:hover, .ib-game button.ib-btn:hover { background: var(--ib-yellow); border-color: var(--ib-yellow); color: var(--ib-ink); }
-.ib-btn-alt, .ib-game button.ib-btn-alt { background: transparent; color: var(--ib-cyan); }
-.ib-btn-danger, .ib-game button.ib-btn-danger { background: var(--ib-red); border-color: var(--ib-red); color: var(--ib-ink); }
-.ib-btn-small, .ib-game button.ib-btn-small { padding: 3px 8px; font-size: .82em; }
-.ib-btn:focus-visible, .ib-game a:focus-visible, .ib-game input:focus-visible, .ib-game select:focus-visible, .ib-game textarea:focus-visible { outline: 2px solid var(--ib-yellow); outline-offset: 2px; }
+.ib-game.ib-game a.ib-btn, .ib-game.ib-game a.ib-btn:visited { color: var(--ib-ink); text-decoration: none; }
+.ib-game.ib-game .ib-btn:hover, .ib-game.ib-game .ib-btn:focus,
+.ib-game.ib-game a.ib-btn:hover, .ib-game.ib-game a.ib-btn:focus {
+  background: var(--ib-yellow); border-color: var(--ib-yellow); color: var(--ib-ink);
+}
+.ib-game.ib-game .ib-btn-alt, .ib-game.ib-game a.ib-btn-alt, .ib-game.ib-game a.ib-btn-alt:visited { background: transparent; color: var(--ib-cyan); }
+.ib-game.ib-game .ib-btn-alt:hover, .ib-game.ib-game .ib-btn-alt:focus,
+.ib-game.ib-game a.ib-btn-alt:hover, .ib-game.ib-game a.ib-btn-alt:focus { background: var(--ib-yellow); color: var(--ib-ink); }
+.ib-game.ib-game .ib-btn-danger, .ib-game.ib-game a.ib-btn-danger, .ib-game.ib-game a.ib-btn-danger:visited { background: var(--ib-red); border-color: var(--ib-red); color: var(--ib-ink); }
+.ib-game.ib-game .ib-btn-danger:hover, .ib-game.ib-game a.ib-btn-danger:hover { background: var(--ib-yellow); border-color: var(--ib-yellow); color: var(--ib-ink); }
+.ib-game.ib-game .ib-btn-small { padding: 3px 8px; font-size: .82em; }
+.ib-game .ib-btn:focus-visible, .ib-game a:focus-visible, .ib-game input:focus-visible, .ib-game select:focus-visible, .ib-game textarea:focus-visible { outline: 2px solid var(--ib-yellow); outline-offset: 2px; }
 
-.ib-game input[type=text], .ib-game input[type=number], .ib-game input[type=password], .ib-game select, .ib-game textarea {
+.ib-game.ib-game input[type=text], .ib-game.ib-game input[type=number], .ib-game.ib-game input[type=password],
+.ib-game.ib-game select, .ib-game.ib-game textarea {
   font-family: var(--ib-font); font-size: .95em; background: #000; color: var(--ib-yellow);
   border: 1px solid var(--ib-border); border-radius: 3px; padding: 5px 7px; max-width: 100%;
 }
@@ -96,19 +125,19 @@
 
 .ib-table-wrap { overflow-x: auto; }
 .ib-table { width: 100%; border-collapse: collapse; margin-bottom: .8em; font-size: .92em; }
-.ib-table th, .ib-table td { border-bottom: 1px solid var(--ib-border); padding: 6px 8px; text-align: left; vertical-align: middle; }
-.ib-table th { color: var(--ib-dim); font-weight: normal; }
-.ib-table tr.ib-current td { background: rgba(127, 251, 255, .12); color: var(--ib-text); }
+.ib-game.ib-game .ib-table th, .ib-game.ib-game .ib-table td { border-bottom: 1px solid var(--ib-border); padding: 6px 8px; text-align: left; vertical-align: middle; }
+.ib-game.ib-game .ib-table th { color: var(--ib-dim); font-weight: normal; }
+.ib-game.ib-game .ib-table tr.ib-current td { background: rgba(127, 251, 255, .12); color: var(--ib-text); }
+.ib-kv th { width: 42%; }
 
 /* Any highlight paints a bright background, so its text switches to dark ink. */
 .ib-game ::selection { background: var(--ib-yellow); color: var(--ib-ink); }
-.ib-game mark { background: var(--ib-yellow); color: var(--ib-ink); }
-.ib-game option, .ib-game optgroup { background: var(--ib-bg); color: var(--ib-yellow); }
-.ib-game option:checked, .ib-game option:hover { background: var(--ib-cyan); color: var(--ib-ink); }
+.ib-game.ib-game mark { background: var(--ib-yellow); color: var(--ib-ink); }
+.ib-game.ib-game option, .ib-game.ib-game optgroup { background: var(--ib-bg); color: var(--ib-yellow); }
+.ib-game.ib-game option:checked, .ib-game.ib-game option:hover { background: var(--ib-cyan); color: var(--ib-ink); }
 .ib-game input:-webkit-autofill, .ib-game input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--ib-yellow); caret-color: var(--ib-yellow); box-shadow: 0 0 0 1000px #000 inset;
 }
-.ib-kv th { width: 42%; }
 
 .ib-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--ib-border); }
 .ib-row:last-child { border-bottom: 0; }
@@ -120,13 +149,13 @@
 .ib-path { display: flex; flex-wrap: wrap; gap: 4px 0; list-style: none; padding: 0; margin: 0 0 1em; }
 .ib-path li { padding: 2px 8px; }
 .ib-path li + li::before { content: "\2192"; color: var(--ib-dim); margin-right: 8px; }
-.ib-path li.ib-current { color: var(--ib-yellow); }
+.ib-game.ib-game .ib-path li.ib-current { color: var(--ib-yellow); }
 
 .ib-msg { border: 1px solid var(--ib-border); border-radius: 3px; padding: 8px 12px; margin-bottom: 8px; }
 .ib-msg summary { cursor: pointer; }
 .ib-msg.ib-unread { border-color: var(--ib-yellow); }
 .ib-msg-body { margin: 10px 0; white-space: normal; }
-.ib-help summary { cursor: pointer; color: var(--ib-yellow); }
+.ib-game.ib-game .ib-help summary { cursor: pointer; color: var(--ib-yellow); }
 .ib-help li { margin-bottom: .5em; }
 .ib-help li ul { margin: .4em 0 .4em 1.2em; }
 .ib-help li li { margin-bottom: .25em; }
@@ -159,15 +188,15 @@
 .ib-key.ib-n-port { background: var(--ib-cyan); }
 .ib-key.ib-n-special { background: var(--ib-magenta); }
 .ib-key.ib-n-unexplored { background: #0b1320; border-color: #8494ab; }
-.ib-key.ib-n-charted { background: rgba(85, 255, 255, .45); border: 1px dashed #fff; }
+.ib-key.ib-n-charted { background: rgba(127, 251, 255, .45); border: 1px dashed #fff; }
 .ib-key.ib-ring-mine { background: transparent; border: 2px solid var(--ib-green); }
 .ib-key.ib-ring-other { background: transparent; border: 2px solid var(--ib-red); }
 .ib-key-line { display: inline-block; width: 18px; border-top: 2px dashed var(--ib-magenta); vertical-align: middle; }
 
 .ib-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; margin-top: 14px; padding: 8px 12px;
   background: var(--ib-panel); border: 1px solid var(--ib-border); border-radius: 4px; font-size: .82em; color: var(--ib-dim); }
-.ib-footer a { color: var(--ib-cyan); text-decoration: none; }
-.ib-footer a:hover { color: var(--ib-yellow); text-decoration: underline; }
+.ib-game.ib-game .ib-footer a { color: var(--ib-cyan); text-decoration: none; }
+.ib-game.ib-game .ib-footer a:hover { color: var(--ib-yellow); text-decoration: underline; }
 .ib-footer .ib-stat { white-space: nowrap; }
 .ib-footer-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
