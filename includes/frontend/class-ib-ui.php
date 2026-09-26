@@ -194,7 +194,7 @@ class IB_UI {
         foreach ($items as $label => $value) {
             $html .= '<span class="ib-stat"><span class="ib-label">' . esc_html($label) . '</span> ' . $value . '</span> ';
         }
-        $html .= '</span><span class="ib-stat">' . esc_html(IB_Settings::get('game_name')) . ' v' . esc_html(IB_VERSION)
+        $html .= '</span><span class="ib-stat">' . esc_html(IB_GAME_NAME) . ' v' . esc_html(IB_VERSION)
             . ' &middot; <a href="https://maddogproductions.online" target="_blank" rel="noopener">maddogproductions.online</a></span>';
         return $html . '</div>';
     }

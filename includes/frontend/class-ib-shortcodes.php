@@ -25,7 +25,7 @@ class IB_Shortcodes {
 
         ob_start();
         echo '<div class="ib-game ib-page-' . esc_attr($key) . '">';
-        echo '<div class="ib-title">' . esc_html(IB_Settings::get('game_name')) . '</div>';
+        echo '<div class="ib-title">' . esc_html(IB_GAME_NAME) . '</div>';
 
         if (!is_user_logged_in()) {
             echo '<div class="ib-panel"><p>Pilots must sign in to fly.</p><p><a class="ib-btn" href="' . esc_url(wp_login_url(get_permalink())) . '">Sign in</a>';

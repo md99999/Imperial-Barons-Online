@@ -31,7 +31,6 @@ class IB_Settings {
 
     public static function defaults() {
         return [
-            'game_name'            => 'Imperial Barons Online',
             'turns_per_day'        => 10,
             'starting_credits'     => 5000,
             'starting_fighters'    => 30,
@@ -58,9 +57,9 @@ class IB_Settings {
         ];
     }
 
-    /** Settings that are free text rather than integers. */
+    /** Settings that are free text rather than integers. (None at present: every setting is a number.) */
     public static function text_keys() {
-        return ['game_name'];
+        return [];
     }
 
     public static function all() {

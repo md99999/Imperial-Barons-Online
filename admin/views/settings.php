@@ -3,7 +3,6 @@ if (!defined('ABSPATH')) exit;
 $s = IB_Settings::all();
 $fields = [
     'General' => [
-        'game_name' => ['Game name', 'Shown at the top of every game page.'],
         'allow_new_players' => ['Allow new pilots', '1 = open registration, 0 = closed.'],
         'turns_per_day' => ['Turns per day', 'Turns reset at midnight (site timezone). Unused turns do not carry over.'],
         'team_max_members' => ['Max team size', '0 = unlimited.'],

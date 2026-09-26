@@ -148,7 +148,7 @@ class IB_Admin {
             }
         }
         $item_id = wp_update_nav_menu_item($menu_id, $home_item, [
-            'menu-item-title' => IB_Settings::get('game_name'), 'menu-item-object' => 'page',
+            'menu-item-title' => IB_GAME_NAME, 'menu-item-object' => 'page',
             'menu-item-object-id' => $ids['dashboard'], 'menu-item-type' => 'post_type',
             'menu-item-status' => 'publish', 'menu-item-parent-id' => 0, 'menu-item-position' => 1,
         ]);
@@ -182,7 +182,7 @@ class IB_Admin {
      */
     private static function build_block_navigation(array $ids) {
         $content = get_comment_delimited_block_content('core/navigation-link', [
-            'label' => IB_Settings::get('game_name'), 'type' => 'page', 'id' => (int) $ids['dashboard'],
+            'label' => IB_GAME_NAME, 'type' => 'page', 'id' => (int) $ids['dashboard'],
             'url' => get_permalink($ids['dashboard']), 'kind' => 'post-type',
         ], '');
 
