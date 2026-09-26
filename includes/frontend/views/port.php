@@ -17,7 +17,7 @@ $class = (int) $port->port_class;
 <div class="ib-panel">
     <h2><?php echo esc_html($port->port_name); ?> <?php echo IB_UI::pattern($port); ?></h2>
     <?php if ($class === IB_Ports::ARMORY) : ?>
-        <p>The Aurelian Armory. Holds, fighters and shields for sale. Aurelia Prime, the Crown World in this sector, supplies colonists.</p>
+        <p>The Aurelian Armory: holds, fighters, shields, survey drones and charts, and the Crown's recruiting office for colonists.</p>
     <?php elseif ($class === IB_Ports::SHIPYARD) : ?>
         <p>The Imperial Drydock: shipwrights, hardware and Worldseeds.</p>
     <?php else : ?>
@@ -38,7 +38,9 @@ $class = (int) $port->port_class;
     <table class="ib-table ib-trade">
         <thead><tr><th>Commodity</th><th>Status</th><th>Units</th><th>Price/unit</th><th>In holds</th><?php if ($docked) : ?><th>Trade</th><?php endif; ?></tr></thead>
         <tbody>
-        <?php foreach (IB_Game::COMMODITIES as $key => $c) :
+        <?php foreach (IB_Ports::goods($port) as $key) :
+            $c = IB_Game::COMMODITIES[$key];
+            $special = IB_Game::is_specialist($key);
             $mode = IB_Ports::mode($port, $key);
             $qty = IB_Ports::qty($port, $key);
             $max = IB_Ports::max($port, $key);
@@ -52,7 +54,7 @@ $class = (int) $port->port_class;
             $counter = IB_Ports::counter_offer($p, $port, $key);
             ?>
             <tr>
-                <td><?php echo esc_html($c['label']); ?></td>
+                <td><?php echo esc_html($c['label']); ?><?php if ($special) : ?> <span class="ib-special" title="Specialist good: scarce, valuable and volatile">&#9670;</span><?php endif; ?></td>
                 <td class="<?php echo $mode === 'selling' ? 'ib-sell' : 'ib-buy'; ?>"><?php echo $mode === 'selling' ? 'Selling' : 'Buying'; ?></td>
                 <td><?php echo IB_Game::fmt($qty); ?> <span class="ib-dim">(<?php echo $pct; ?>%)</span></td>
                 <td><?php echo IB_Game::fmt($price); ?></td>
@@ -76,8 +78,32 @@ $class = (int) $port->port_class;
         </tbody>
     </table>
     </div>
-    <p class="ib-small ib-dim">Tip: enter a lower offer when buying or a higher one when selling to haggle.
+    <p class="ib-small ib-dim"><span class="ib-special">&#9670;</span> marks a specialist good: scarce and valuable, stocked in small
+        quantities and swinging further in price than the staples. Only some ports deal in one, more often out on the frontier.<br>
+        Tip: enter a lower offer when buying or a higher one when selling to haggle.
         You have <?php echo IB_Player::holds_free($p); ?> empty holds and <?php echo IB_Game::fmt($p->credits); ?> credits.</p>
+</div>
+<?php endif; ?>
+
+<?php if ($class === IB_Ports::ARMORY) :
+    $free_holds = IB_Player::holds_free($p);
+    $colonist_price = (int) IB_Settings::get('price_colonist'); ?>
+<div class="ib-panel">
+    <h3>Colonist recruiting office</h3>
+    <p class="ib-small">Settlers bound for the frontier: <?php echo IB_Game::fmt($colonist_price); ?> credits each, one cargo hold apiece.
+        Carry them to a planet you own and they will produce goods and fighters every hour. You can also recruit them
+        on Aurelia Prime itself, the Crown World in this sector.</p>
+    <?php if (!$docked) : ?>
+        <p class="ib-dim ib-small">Dock to recruit colonists.</p>
+    <?php elseif ($free_holds < 1) : ?>
+        <p class="ib-dim ib-small">Your holds are full.</p>
+    <?php else : ?>
+        <?php echo IB_UI::form_open('buy_colonists', 'ib-inline'); ?>
+            <input type="number" name="qty" min="1" max="<?php echo $free_holds; ?>" value="<?php echo $free_holds; ?>" class="ib-num" aria-label="Colonists">
+            <button type="submit" class="ib-btn">Take colonists aboard</button>
+        </form>
+        <p class="ib-dim ib-small">You have <?php echo $free_holds; ?> empty holds and carry <?php echo IB_Game::fmt($p->colonists); ?> colonists.</p>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

@@ -250,13 +250,18 @@ if another run currently holds the lock.
   once, after which trading and haggling are free until you leave) and attacking (1). Landing, cargo
   transfers, bastions, drones, the Computer, the Map and messages are all free. Turns reset at midnight
   (site time) and do not carry over; every game page shows a bar with the turns you have left.
-- **Trading.** A port's class is three letters showing whether it **B**uys or **S**ells Ferrium Ore,
-  Biostock and Machinery, in that order. Buy where a port sells, and sell where another port buys.
-  Well-stocked ports sell cheaply; ports with strong demand pay the most.
+- **Trading.** A port's class is three letters showing whether it **B**uys or **S**ells the three
+  staples, Ferrium Ore, Biostock and Machinery, in that order. Buy where a port sells, and sell where
+  another port buys. Well-stocked ports sell cheaply; ports with strong demand pay the most.
+- **Specialist goods.** Some ports also deal in one of three specialist goods: Rare Isotopes,
+  Medicine or Luxuries. They are worth several times a staple per hold and swing further in price,
+  but stocks are small and such ports are scarce near Aurelia and more common out on the frontier.
+  Planets do not produce them. The Computer's port finder and known-port report both list them.
 - **Haggling.** Offer a better price than the port lists. It may accept (bonus experience),
   counter-offer, or refuse to haggle with you for an hour if you push too hard.
 - **Aurelia and the Imperial Drydock.** The Aurelian Armory in sector 1 sells holds, fighters,
-  shields, survey drones and nebula charts. Aurelia Prime, the Crown World, supplies colonists. The
+  shields, survey drones and nebula charts, and recruits colonists while you are docked (you can also
+  land on Aurelia Prime, the Crown World in the same sector, and recruit them there). The
   Imperial Drydock also sells nine ship types, from the Freetrader to the Baronial Flagship, and
   Worldseeds for creating planets.
 - **Exploring.** Sensors sweep every neighbouring sector as you arrive, revealing ports, planets and

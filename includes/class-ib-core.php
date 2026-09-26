@@ -111,11 +111,36 @@ class IB_Log {
 }
 
 class IB_Game {
+    /**
+     * Tradeable goods.
+     *
+     * Every trading port (classes 1-8) handles the three staples, and the port's class code is
+     * its buy/sell stance on them. Specialist goods are rarer, dearer and swing further in price;
+     * a port deals in at most one of them, and only some ports do at all. 'col' is the port's
+     * column prefix for staples, while specialists live in the port's spec_* columns.
+     * 'vol' scales how far the price moves from base as stock or demand changes.
+     */
     const COMMODITIES = [
-        'ore'       => ['label' => 'Ferrium Ore',  'base' => 30, 'col' => 'ore'],
-        'organics'  => ['label' => 'Biostock',  'base' => 50, 'col' => 'org'],
-        'equipment' => ['label' => 'Machinery', 'base' => 90, 'col' => 'equ'],
+        'ore'       => ['label' => 'Ferrium Ore',   'base' => 30,  'col' => 'ore', 'vol' => 1.0, 'specialist' => false],
+        'organics'  => ['label' => 'Biostock',      'base' => 50,  'col' => 'org', 'vol' => 1.0, 'specialist' => false],
+        'equipment' => ['label' => 'Machinery',     'base' => 90,  'col' => 'equ', 'vol' => 1.0, 'specialist' => false],
+        'isotopes'  => ['label' => 'Rare Isotopes', 'base' => 320, 'col' => '',    'vol' => 1.7, 'specialist' => true],
+        'medicine'  => ['label' => 'Medicine',      'base' => 200, 'col' => '',    'vol' => 1.5, 'specialist' => true],
+        'luxuries'  => ['label' => 'Luxuries',      'base' => 480, 'col' => '',    'vol' => 1.9, 'specialist' => true],
     ];
+
+    /** @return string[] commodity keys: staples by default, specialists when $specialist is true. */
+    public static function commodities($specialist = false) {
+        $out = [];
+        foreach (self::COMMODITIES as $key => $c) {
+            if ((bool) $c['specialist'] === (bool) $specialist) $out[] = $key;
+        }
+        return $out;
+    }
+
+    public static function is_specialist($commodity) {
+        return isset(self::COMMODITIES[$commodity]) && !empty(self::COMMODITIES[$commodity]['specialist']);
+    }
 
     /** Experience thresholds and titles, lowest first. */
     const RANKS = [

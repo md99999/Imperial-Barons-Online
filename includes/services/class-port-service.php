@@ -39,33 +39,59 @@ class IB_Ports {
         return $port && (int) $port->port_class >= 1 && (int) $port->port_class <= 8;
     }
 
+    /** The specialist good this port deals in, or '' for none. */
+    public static function specialty($port) {
+        $key = ($port && isset($port->spec_commodity)) ? (string) $port->spec_commodity : '';
+        return IB_Game::is_specialist($key) ? $key : '';
+    }
+
+    /** Goods this port trades: the three staples, plus its specialist good if it has one. */
+    public static function goods($port) {
+        if (!self::is_trading_port($port)) return [];
+        $goods = IB_Game::commodities();
+        $special = self::specialty($port);
+        if ($special) $goods[] = $special;
+        return $goods;
+    }
+
     /** @return 'selling'|'buying'|null from the port's perspective */
     public static function mode($port, $commodity) {
         if (!self::is_trading_port($port)) return null;
-        $idx = array_search($commodity, array_keys(IB_Game::COMMODITIES), true);
+        if (IB_Game::is_specialist($commodity)) {
+            if (self::specialty($port) !== $commodity) return null;
+            return $port->spec_mode === 'S' ? 'selling' : 'buying';
+        }
+        $idx = array_search($commodity, IB_Game::commodities(), true);
         if ($idx === false) return null;
         return self::CLASSES[(int) $port->port_class][$idx] === 'S' ? 'selling' : 'buying';
     }
 
+    /** Column prefix: the staple's own prefix, or 'spec' for the port's specialist good. */
+    private static function col($commodity) {
+        return IB_Game::is_specialist($commodity) ? 'spec' : IB_Game::COMMODITIES[$commodity]['col'];
+    }
+
     public static function qty($port, $commodity) {
-        $col = IB_Game::COMMODITIES[$commodity]['col'];
-        return (int) $port->{$col . '_qty'};
+        return (int) $port->{self::col($commodity) . '_qty'};
     }
 
     public static function max($port, $commodity) {
-        $col = IB_Game::COMMODITIES[$commodity]['col'];
-        return (int) $port->{$col . '_max'};
+        return (int) $port->{self::col($commodity) . '_max'};
     }
 
-    /** Listed price per unit. Plentiful stock is cheap; strong demand pays well. */
+    /**
+     * Listed price per unit. Plentiful stock is cheap; strong demand pays well.
+     * Specialist goods carry a higher 'vol', so their prices swing further either way.
+     */
     public static function price($port, $commodity) {
-        $base = IB_Game::COMMODITIES[$commodity]['base'];
+        $c = IB_Game::COMMODITIES[$commodity];
         $max = self::max($port, $commodity);
         $ratio = $max > 0 ? self::qty($port, $commodity) / $max : 0;
-        $price = self::mode($port, $commodity) === 'selling'
-            ? $base * (1.25 - 0.35 * $ratio)
-            : $base * (0.75 + 0.45 * $ratio);
-        return max(1, (int) round($price));
+        $vol = isset($c['vol']) ? (float) $c['vol'] : 1.0;
+        $deviation = self::mode($port, $commodity) === 'selling'
+            ? 0.25 - 0.35 * $ratio
+            : -0.25 + 0.45 * $ratio;
+        return max(1, (int) round($c['base'] * (1 + $vol * $deviation)));
     }
 
     public static function dock($p) {
@@ -99,7 +125,7 @@ class IB_Ports {
         if ($qty <= 0) throw new IB_Game_Exception('Enter a quantity greater than zero.');
 
         $label = IB_Game::COMMODITIES[$commodity]['label'];
-        $col = IB_Game::COMMODITIES[$commodity]['col'] . '_qty';
+        $col = self::col($commodity) . '_qty';
         $stock = self::qty($port, $commodity);
         $list = self::price($port, $commodity);
 
@@ -269,9 +295,10 @@ class IB_Ports {
             "UPDATE $t SET
                 ore_qty = LEAST(ore_max, ore_qty + CEIL(ore_max * %f)),
                 org_qty = LEAST(org_max, org_qty + CEIL(org_max * %f)),
-                equ_qty = LEAST(equ_max, equ_qty + CEIL(equ_max * %f))
+                equ_qty = LEAST(equ_max, equ_qty + CEIL(equ_max * %f)),
+                spec_qty = LEAST(spec_max, spec_qty + CEIL(spec_max * %f))
              WHERE port_class BETWEEN 1 AND 8",
-            $pct, $pct, $pct
+            $pct, $pct, $pct, $pct
         ));
     }
 }

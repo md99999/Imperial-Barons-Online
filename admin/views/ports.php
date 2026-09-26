@@ -28,20 +28,26 @@ $base = admin_url('admin.php?page=ib_ports');
 
 <p><?php echo IB_Game::fmt($total); ?> ports.</p>
 <table class="widefat striped">
-    <thead><tr><th>Sector</th><th>Name</th><th>Class</th><th>Ferrium Ore</th><th>Biostock</th><th>Machinery</th></tr></thead>
+    <thead><tr><th>Sector</th><th>Name</th><th>Class</th><th>Ferrium Ore</th><th>Biostock</th><th>Machinery</th><th>Specialist</th></tr></thead>
     <tbody>
     <?php foreach ($ports as $port) : ?>
         <tr>
             <td><?php echo (int) $port->sector_id; ?></td>
             <td><?php echo esc_html($port->port_name); ?></td>
             <td><?php echo (int) $port->port_class; ?> (<?php echo esc_html(IB_Ports::class_code($port->port_class)); ?>)</td>
-            <?php foreach (IB_Game::COMMODITIES as $key => $c) : ?>
+            <?php foreach (IB_Game::commodities() as $key) : ?>
                 <td><?php if (IB_Ports::is_trading_port($port)) : ?>
                     <?php echo IB_Ports::mode($port, $key) === 'selling' ? 'S' : 'B'; ?>
                     <?php echo IB_Game::fmt(IB_Ports::qty($port, $key)); ?>/<?php echo IB_Game::fmt(IB_Ports::max($port, $key)); ?>
                     @ <?php echo IB_Ports::price($port, $key); ?>
                 <?php else : ?>&mdash;<?php endif; ?></td>
             <?php endforeach; ?>
+            <td><?php $spec = IB_Ports::specialty($port);
+                if ($spec) {
+                    echo esc_html(IB_Game::label($spec)) . ' ' . (IB_Ports::mode($port, $spec) === 'selling' ? 'S' : 'B') . ' '
+                        . IB_Game::fmt(IB_Ports::qty($port, $spec)) . '/' . IB_Game::fmt(IB_Ports::max($port, $spec))
+                        . ' @ ' . IB_Ports::price($port, $spec);
+                } else { echo '&mdash;'; } ?></td>
         </tr>
     <?php endforeach; ?>
     </tbody>

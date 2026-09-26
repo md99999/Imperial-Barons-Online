@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) exit;
  * reachable from, and able to return to, Aurelia.
  */
 class IB_Universe_Forge {
+    /** How many ports the last run gave a specialist good. */
+    private $specialist_ports = 0;
+
     const SECTORS = 500;
     const MAX_WARPS = 6;
     const MIN_SECTORS = 100;
@@ -53,7 +56,7 @@ class IB_Universe_Forge {
         $dist = IB_Pathfinder::distances($graph, 1);
         $open = array_values(array_filter(array_keys($sectors), function ($id) use ($fed) { return $id > $fed; }));
         $drydock = $this->pick_drydock($dist, $fed);
-        $ports = $this->create_ports($sectors, $drydock, (int) $o['port_density']);
+        $ports = $this->create_ports($sectors, $drydock, (int) $o['port_density'], $dist);
         $planets = $this->create_planets($open, (int) $o['planet_density']);
 
         $home = 0;
@@ -65,7 +68,7 @@ class IB_Universe_Forge {
         IB_Pathfinder::flush();
         $summary = [
             'seed' => $seed, 'sectors' => $n, 'core' => $fed, 'warps' => $warp_count, 'one_way' => $one_way,
-            'ports' => $ports, 'planets' => $planets, 'fleets' => $fleets, 'drydock' => $drydock,
+            'ports' => $ports, 'specialist_ports' => $this->specialist_ports, 'planets' => $planets, 'fleets' => $fleets, 'drydock' => $drydock,
             'vraxori_home' => $home, 'generated_at' => current_time('mysql'),
             'seconds' => round(microtime(true) - $started, 1),
         ];
@@ -302,9 +305,23 @@ class IB_Universe_Forge {
         return ucfirst($pre[array_rand($pre)] . $mid[array_rand($mid)] . $suf[array_rand($suf)]) . ' ' . $kind[array_rand($kind)];
     }
 
-    private function create_ports($sectors, $drydock, $density) {
-        $rows = [[1, 'The Aurelian Armory', IB_Ports::ARMORY, 0, 0, 0, 0, 0, 0], [$drydock, 'The Imperial Drydock', IB_Ports::SHIPYARD, 0, 0, 0, 0, 0, 0]];
+    /**
+     * Trading ports all carry the three staples. Some also deal in one specialist good: rarer,
+     * dearer and stocked in far smaller quantities. They are scarce near Aurelia and more common
+     * out on the frontier, so the long hauls are the profitable ones.
+     *
+     * @param array $dist hop distance from Aurelia, per sector
+     */
+    private function create_ports($sectors, $drydock, $density, $dist) {
+        $no_spec = ['', '', 0, 0];
+        $rows = [
+            array_merge([1, 'The Aurelian Armory', IB_Ports::ARMORY, 0, 0, 0, 0, 0, 0], $no_spec),
+            array_merge([$drydock, 'The Imperial Drydock', IB_Ports::SHIPYARD, 0, 0, 0, 0, 0, 0], $no_spec),
+        ];
         $class_weights = [1 => 15, 2 => 15, 3 => 15, 4 => 12, 5 => 12, 6 => 12, 7 => 9, 8 => 10];
+        $specialists = IB_Game::commodities(true);
+        $this->specialist_ports = 0;
+
         foreach (array_keys($sectors) as $id) {
             if ($id === 1 || $id === $drydock || mt_rand(1, 100) > $density) continue;
             $row = [$id, self::port_name(), $this->weighted($class_weights)];
@@ -313,10 +330,25 @@ class IB_Universe_Forge {
                 $row[] = (int) ($max * mt_rand(50, 100) / 100);
                 $row[] = $max;
             }
+            // Roughly 13% of ports near Aurelia, rising to about a third far out.
+            $hops = isset($dist[$id]) ? min(20, (int) $dist[$id]) : 10;
+            if ($specialists && mt_rand(1, 100) <= 12 + $hops) {
+                $spec_max = mt_rand(8, 40) * 10;
+                $row = array_merge($row, [
+                    $specialists[array_rand($specialists)],
+                    mt_rand(0, 1) ? 'S' : 'B',
+                    (int) ($spec_max * mt_rand(40, 100) / 100),
+                    $spec_max,
+                ]);
+                $this->specialist_ports++;
+            } else {
+                $row = array_merge($row, $no_spec);
+            }
             $rows[] = $row;
         }
-        $this->insert_rows('ports', 'sector_id, port_name, port_class, ore_qty, ore_max, org_qty, org_max, equ_qty, equ_max',
-            '%d, %s, %d, %d, %d, %d, %d, %d, %d', $rows);
+        $this->insert_rows('ports',
+            'sector_id, port_name, port_class, ore_qty, ore_max, org_qty, org_max, equ_qty, equ_max, spec_commodity, spec_mode, spec_qty, spec_max',
+            '%d, %s, %d, %d, %d, %d, %d, %d, %d, %s, %s, %d, %d', $rows);
         return count($rows);
     }
 

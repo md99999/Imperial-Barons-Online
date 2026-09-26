@@ -15,6 +15,9 @@ CREATE TABLE {prefix}ib_players (
   ore int(11) NOT NULL DEFAULT 0,
   organics int(11) NOT NULL DEFAULT 0,
   equipment int(11) NOT NULL DEFAULT 0,
+  isotopes int(11) NOT NULL DEFAULT 0,
+  medicine int(11) NOT NULL DEFAULT 0,
+  luxuries int(11) NOT NULL DEFAULT 0,
   colonists int(11) NOT NULL DEFAULT 0,
   worldseeds int(11) NOT NULL DEFAULT 0,
   survey_drones int(11) NOT NULL DEFAULT 0,
@@ -59,6 +62,10 @@ CREATE TABLE {prefix}ib_ports (
   org_max int(11) NOT NULL DEFAULT 0,
   equ_qty int(11) NOT NULL DEFAULT 0,
   equ_max int(11) NOT NULL DEFAULT 0,
+  spec_commodity varchar(20) NOT NULL DEFAULT '',
+  spec_mode char(1) NOT NULL DEFAULT '',
+  spec_qty int(11) NOT NULL DEFAULT 0,
+  spec_max int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   UNIQUE KEY sector_id (sector_id)
 ) {charset_collate};

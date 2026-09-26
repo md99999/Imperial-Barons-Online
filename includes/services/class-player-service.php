@@ -3,7 +3,8 @@ if (!defined('ABSPATH')) exit;
 
 class IB_Player {
     /** Integer columns that may be changed with add(). */
-    const COUNTERS = ['fighters', 'shield_points', 'cargo_holds', 'ore', 'organics', 'equipment', 'colonists',
+    const COUNTERS = ['fighters', 'shield_points', 'cargo_holds', 'ore', 'organics', 'equipment',
+                      'isotopes', 'medicine', 'luxuries', 'colonists',
                       'worldseeds', 'survey_drones', 'credits', 'experience', 'alignment', 'turns_remaining', 'kills', 'deaths'];
 
     private static $current = false;
@@ -259,7 +260,8 @@ class IB_Player {
     }
 
     public static function jettison($p, $commodity, $qty) {
-        if (!in_array($commodity, ['ore', 'organics', 'equipment', 'colonists'], true)) throw new IB_Game_Exception('Invalid cargo.');
+        $jettisonable = array_merge(array_keys(IB_Game::COMMODITIES), ['colonists']);
+        if (!in_array($commodity, $jettisonable, true)) throw new IB_Game_Exception('Invalid cargo.');
         $qty = min((int) $qty, (int) $p->$commodity);
         if ($qty <= 0) throw new IB_Game_Exception('Nothing to jettison.');
         if ($commodity === 'colonists') {
@@ -282,7 +284,9 @@ class IB_Player {
     }
 
     public static function holds_used($p) {
-        return (int) $p->ore + (int) $p->organics + (int) $p->equipment + (int) $p->colonists;
+        $used = (int) $p->colonists;
+        foreach (array_keys(IB_Game::COMMODITIES) as $key) $used += (int) $p->$key;
+        return $used;
     }
 
     public static function holds_free($p) {
@@ -295,9 +299,9 @@ class IB_Player {
         $c = IB_Game::COMMODITIES;
         $ship = self::ship($p);
         $worth = (int) $p->credits
-            + $p->ore * $c['ore']['base'] + $p->organics * $c['organics']['base'] + $p->equipment * $c['equipment']['base']
             + $p->fighters * $s['price_fighter'] + $p->shield_points * $s['price_shield']
             + (int) ($ship['price'] / 2) + $p->worldseeds * $s['price_worldseed'];
+        foreach (IB_Game::COMMODITIES as $key => $def) $worth += (int) $p->$key * $def['base'];
         $planets = $wpdb->get_row($wpdb->prepare(
             'SELECT COALESCE(SUM(bastion_vault),0) cr, COALESCE(SUM(fighters),0) f, COALESCE(SUM(colonists),0) col,
                     COALESCE(SUM(ore),0) o, COALESCE(SUM(organics),0) g, COALESCE(SUM(equipment),0) e
@@ -315,7 +319,8 @@ class IB_Player {
         $s = IB_Settings::all();
         self::update($p, [
             'ship_type' => IB_Ships::DEFAULT_TYPE, 'cargo_holds' => $s['starting_holds'], 'fighters' => 0, 'shield_points' => 0,
-            'ore' => 0, 'organics' => 0, 'equipment' => 0, 'colonists' => 0, 'worldseeds' => 0, 'survey_drones' => 0,
+            'ore' => 0, 'organics' => 0, 'equipment' => 0, 'isotopes' => 0, 'medicine' => 0, 'luxuries' => 0,
+            'colonists' => 0, 'worldseeds' => 0, 'survey_drones' => 0,
             'sector_id' => 1, 'prev_sector_id' => 0, 'docked_port_id' => 0, 'landed_planet_id' => 0,
             'turns_remaining' => 0, 'last_turn_reset' => IB_Game::today(),
         ]);

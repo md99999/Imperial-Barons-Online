@@ -2,7 +2,9 @@
 /** @var object $p */
 if (!defined('ABSPATH')) exit;
 $ship = IB_Player::ship($p);
-$cargo = ['ore' => 'Ferrium Ore', 'organics' => 'Biostock', 'equipment' => 'Machinery', 'colonists' => 'Colonists'];
+$cargo = [];
+foreach (IB_Game::COMMODITIES as $key => $c) $cargo[$key] = $c['label'];
+$cargo['colonists'] = 'Colonists';
 ?>
 <div class="ib-grid">
     <div class="ib-panel">

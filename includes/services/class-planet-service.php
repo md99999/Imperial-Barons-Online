@@ -211,9 +211,20 @@ class IB_Planets {
         return 'Planet renamed to ' . $name . '.';
     }
 
+    /**
+     * Recruit colonists: either landed on the Crown World, or docked at the Aurelian Armory,
+     * whose recruiting office is where most traders pick them up.
+     */
     public static function buy_colonists($p, $qty) {
-        $planet = self::require_landed($p);
-        if ($planet->planet_class !== self::CROWN_WORLD) throw new IB_Game_Exception('Colonists can only be recruited on Aurelia Prime.');
+        $planet = (int) $p->landed_planet_id ? self::get($p->landed_planet_id) : null;
+        $on_crown_world = $planet && $planet->planet_class === self::CROWN_WORLD && (int) $planet->sector_id === (int) $p->sector_id;
+        if (!$on_crown_world) {
+            $port = IB_Ports::in_sector($p->sector_id);
+            $at_armory = $port && (int) $port->port_class === IB_Ports::ARMORY && (int) $p->docked_port_id === (int) $port->id;
+            if (!$at_armory) {
+                throw new IB_Game_Exception('Colonists are recruited on Aurelia Prime, or at the Aurelian Armory while docked.');
+            }
+        }
         $qty = (int) $qty;
         if ($qty <= 0) throw new IB_Game_Exception('Enter a quantity greater than zero.');
         if ($qty > IB_Player::holds_free($p)) throw new IB_Game_Exception(sprintf('You only have %d empty holds.', IB_Player::holds_free($p)));

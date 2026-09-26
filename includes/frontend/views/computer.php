@@ -105,16 +105,21 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
     <?php else : ?>
         <div class="ib-table-wrap">
         <table class="ib-table">
-            <thead><tr><th>Sector</th><th>Port</th><th>Class</th><th>Ore</th><th>Bio</th><th>Mach</th><th>Warps</th></tr></thead>
+            <thead><tr><th>Sector</th><th>Port</th><th>Class</th><th>Ore</th><th>Bio</th><th>Mach</th><th>Specialist</th><th>Warps</th></tr></thead>
             <tbody>
             <?php foreach (array_slice($known_ports, 0, 60) as $port) : ?>
                 <tr>
                     <td><a href="<?php echo esc_url(IB_UI::url('computer', ['target' => $port->sector_id])); ?>"><?php echo (int) $port->sector_id; ?></a></td>
                     <td><?php echo esc_html($port->port_name); ?></td>
                     <td><?php echo IB_UI::pattern($port); ?></td>
-                    <?php foreach (array_keys(IB_Game::COMMODITIES) as $key) : ?>
+                    <?php foreach (IB_Game::commodities() as $key) : ?>
                         <td><?php echo IB_Ports::is_trading_port($port) ? IB_Game::fmt(IB_Ports::price($port, $key)) : '-'; ?></td>
                     <?php endforeach; ?>
+                    <td><?php $spec = IB_Ports::specialty($port);
+                        if ($spec) {
+                            printf('<span class="ib-special">%s</span> %s @ %s', esc_html(IB_Game::label($spec)),
+                                IB_Ports::mode($port, $spec) === 'selling' ? 'sells' : 'buys', IB_Game::fmt(IB_Ports::price($port, $spec)));
+                        } else { echo '<span class="ib-dim">-</span>'; } ?></td>
                     <td><?php echo (int) $port->distance; ?></td>
                 </tr>
             <?php endforeach; ?>
