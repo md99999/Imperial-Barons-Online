@@ -99,7 +99,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
    left as *Subscriber*). If registration is open, protect the registration form from bots with an
    anti-bot plugin such as *Simple Cloudflare Turnstile*. Players sign in, open
-   the **IBO – Imperial Barons** page, and create a pilot.
+   the **Imperial Barons - Home** page, and create a pilot.
 7. **Set up cron** so the hourly and daily game jobs run on time. See
    [Scheduled maintenance (cron)](#scheduled-maintenance-cron) below.
 8. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
@@ -107,23 +107,23 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
 
 ### Game pages
 
-Pages are listed in the in-game navigation order. Titles carry an "IBO - " prefix so the game's
+Pages are listed in the in-game navigation order. Titles carry an "Imperial Barons - " prefix so the game's
 pages stand out in the WordPress Pages list; running *Create pages & menu* again renames pages
 created by earlier versions.
 
 | Page | Slug | Shortcode |
 |---|---|---|
-| IBO – Imperial Barons | `imperial-barons-online` | `[ib_dashboard]` |
-| IBO - Sector | `imperial-barons-online-sector` | `[ib_sector]` |
-| IBO - Port | `imperial-barons-online-port` | `[ib_port]` |
-| IBO - Galaxy Map | `imperial-barons-online-map` | `[ib_map]` |
-| IBO - Computer | `imperial-barons-online-computer` | `[ib_computer]` |
-| IBO - Planet | `imperial-barons-online-planet` | `[ib_planet]` |
-| IBO - Ship Status | `imperial-barons-online-ship` | `[ib_ship]` |
-| IBO - Team | `imperial-barons-online-team` | `[ib_team]` |
-| IBO - Messages | `imperial-barons-online-messages` | `[ib_messages]` |
-| IBO - Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
-| IBO - How to Play | `imperial-barons-online-how-to-play` | `[ib_howto]` |
+| Imperial Barons - Home | `imperial-barons-online` | `[ib_dashboard]` |
+| Imperial Barons - Sector | `imperial-barons-online-sector` | `[ib_sector]` |
+| Imperial Barons - Port | `imperial-barons-online-port` | `[ib_port]` |
+| Imperial Barons - Galaxy Map | `imperial-barons-online-map` | `[ib_map]` |
+| Imperial Barons - Computer | `imperial-barons-online-computer` | `[ib_computer]` |
+| Imperial Barons - Planet | `imperial-barons-online-planet` | `[ib_planet]` |
+| Imperial Barons - Ship Status | `imperial-barons-online-ship` | `[ib_ship]` |
+| Imperial Barons - Team | `imperial-barons-online-team` | `[ib_team]` |
+| Imperial Barons - Messages | `imperial-barons-online-messages` | `[ib_messages]` |
+| Imperial Barons - Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
+| Imperial Barons - How to Play | `imperial-barons-online-how-to-play` | `[ib_howto]` |
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
 
@@ -284,7 +284,7 @@ if another run currently holds the lock.
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
   Freetrader and are grounded until tomorrow.
 
-The full guide is under **How to play** on the IBO – Imperial Barons page.
+The full guide is under **How to play** on the Imperial Barons - Home page.
 
 ---
 

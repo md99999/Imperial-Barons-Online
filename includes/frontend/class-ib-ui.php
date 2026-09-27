@@ -11,17 +11,17 @@ class IB_UI {
      * then navigation, then your holdings, then the social pages.
      */
     const PAGES = [
-        'dashboard' => ['IBO – Imperial Barons', 'imperial-barons-online', 'ib_dashboard', 'Home'],
-        'sector'    => ['IBO - Sector', 'imperial-barons-online-sector', 'ib_sector', 'Sector'],
-        'port'      => ['IBO - Port', 'imperial-barons-online-port', 'ib_port', 'Port'],
-        'map'       => ['IBO - Galaxy Map', 'imperial-barons-online-map', 'ib_map', 'Map'],
-        'computer'  => ['IBO - Computer', 'imperial-barons-online-computer', 'ib_computer', 'Computer'],
-        'planet'    => ['IBO - Planet', 'imperial-barons-online-planet', 'ib_planet', 'Planet'],
-        'ship'      => ['IBO - Ship Status', 'imperial-barons-online-ship', 'ib_ship', 'Ship'],
-        'team'      => ['IBO - Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
-        'messages'  => ['IBO - Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
-        'rankings'  => ['IBO - Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
-        'howto'     => ['IBO - How to Play', 'imperial-barons-online-how-to-play', 'ib_howto', 'How to Play'],
+        'dashboard' => ['Imperial Barons - Home', 'imperial-barons-online', 'ib_dashboard', 'Home'],
+        'sector'    => ['Imperial Barons - Sector', 'imperial-barons-online-sector', 'ib_sector', 'Sector'],
+        'port'      => ['Imperial Barons - Port', 'imperial-barons-online-port', 'ib_port', 'Port'],
+        'map'       => ['Imperial Barons - Galaxy Map', 'imperial-barons-online-map', 'ib_map', 'Map'],
+        'computer'  => ['Imperial Barons - Computer', 'imperial-barons-online-computer', 'ib_computer', 'Computer'],
+        'planet'    => ['Imperial Barons - Planet', 'imperial-barons-online-planet', 'ib_planet', 'Planet'],
+        'ship'      => ['Imperial Barons - Ship Status', 'imperial-barons-online-ship', 'ib_ship', 'Ship'],
+        'team'      => ['Imperial Barons - Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
+        'messages'  => ['Imperial Barons - Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
+        'rankings'  => ['Imperial Barons - Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
+        'howto'     => ['Imperial Barons - How to Play', 'imperial-barons-online-how-to-play', 'ib_howto', 'How to Play'],
     ];
 
     public static function url($key, $args = []) {

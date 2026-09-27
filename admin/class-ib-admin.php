@@ -116,7 +116,7 @@ class IB_Admin {
             $existing = get_page_by_path($slug);
             if ($existing && $existing->post_status !== 'trash') {
                 $ids[$key] = $existing->ID;
-                // Bring pages from earlier versions up to the current "IBO - ..." titles so the
+                // Bring pages from earlier versions up to the current "Imperial Barons - ..." titles so the
                 // game's pages are easy to pick out in the Pages list. Slugs are left alone.
                 if ($existing->post_title !== $title) {
                     wp_update_post(['ID' => $existing->ID, 'post_title' => $title]);
@@ -154,7 +154,7 @@ class IB_Admin {
         ]);
         if (is_wp_error($item_id)) throw new IB_Game_Exception('Could not add the menu item: ' . $item_id->get_error_message());
 
-        $msg = sprintf('%d page(s) created, %d renamed to the "IBO - ..." titles; the "Imperial Barons Online" menu (a single home page link) is ready.', $created, $renamed);
+        $msg = sprintf('%d page(s) created, %d renamed to the "Imperial Barons - ..." titles; the "Imperial Barons Online" menu (a single home page link) is ready.', $created, $renamed);
 
         // Where the link should appear is the admin's choice: nowhere (the default), a block
         // theme's header, or one of the theme's classic menu locations.
