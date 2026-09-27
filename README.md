@@ -53,8 +53,9 @@ Before installing it on a site you care about:
   so secure those as you would on any site, for example with an anti-bot plugin on the registration form.
 - **Read the code.** It is open source precisely so you can audit it, and change it, before trusting it.
 
-If you find a security problem, please report it by opening an issue at
-<https://github.com/md99999/Imperial-Barons-Online>.
+If you find a security problem, please report it privately by email to
+**sysop@maddogproductions.online** rather than opening a public issue. See [SECURITY.md](SECURITY.md)
+for what to include and what happens next.
 
 ---
 
@@ -345,6 +346,7 @@ with no warranty.
 ```
 imperial-barons-online.php    plugin bootstrap and hooks
 uninstall.php                 removes tables and options when the plugin is deleted
+SECURITY.md                   how to report a vulnerability, and what is in scope
 sql/install.sql               database schema (applied with dbDelta and the site's table prefix)
 includes/class-ib-core.php    settings, table names, logging, ranks
 includes/data/                ship catalogue

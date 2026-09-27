@@ -33,7 +33,9 @@ $locations = get_registered_nav_menus();
         provided as is, without warranty of any kind, under the GNU General Public License v2.</p>
     <p class="description">Test on a staging site first, keep backups of your database and files, keep WordPress, PHP,
         your theme and plugins up to date, and serve the site over HTTPS. The Universe Forge and Reset tools erase game
-        data permanently and cannot be undone. Full details are in the plugin's <code>README.md</code>.</p>
+        data permanently and cannot be undone. Full details are in the plugin's <code>README.md</code>.
+        Found a security problem? Please report it privately to
+        <a href="mailto:sysop@maddogproductions.online">sysop@maddogproductions.online</a>.</p>
 </div>
 
 <div class="ib-box">
