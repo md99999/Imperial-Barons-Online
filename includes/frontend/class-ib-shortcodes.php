@@ -28,9 +28,16 @@ class IB_Shortcodes {
         echo '<div class="ib-title">' . esc_html(IB_GAME_NAME) . '</div>';
 
         if (!is_user_logged_in()) {
-            echo '<div class="ib-panel"><p>Pilots must sign in to fly.</p><p><a class="ib-btn" href="' . esc_url(wp_login_url(get_permalink())) . '">Sign in</a>';
-            if (get_option('users_can_register')) echo ' <a class="ib-btn ib-btn-alt" href="' . esc_url(wp_registration_url()) . '">Register</a>';
-            echo '</p></div>';
+            // The home page doubles as the shop window: the guide and the standings are public,
+            // so visitors can see what the game is before they sign up.
+            if ($key === 'dashboard') {
+                include IB_PATH . 'includes/frontend/views/_welcome.php';
+                echo IB_UI::footer_bar(null);
+            } else {
+                echo '<div class="ib-panel"><p>Pilots must sign in to fly.</p><p><a class="ib-btn" href="' . esc_url(wp_login_url(get_permalink())) . '">Sign in</a>';
+                if (get_option('users_can_register')) echo ' <a class="ib-btn ib-btn-alt" href="' . esc_url(wp_registration_url()) . '">Create an account</a>';
+                echo ' <a class="ib-btn ib-btn-alt" href="' . esc_url(IB_UI::url('dashboard')) . '">How to play</a></p></div>';
+            }
         } elseif (!IB_Game::universe_exists()) {
             echo '<div class="ib-panel"><p>The universe has not been created yet.</p>';
             if (current_user_can('manage_options')) {

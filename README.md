@@ -89,15 +89,18 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    **Assign menu to theme location** decides where that link appears: *Don't assign* (the default),
    one of your theme's menu locations, or, on block themes such as Twenty Twenty-Five, *Theme header*,
    which creates a matching block navigation menu.
-5. **Let players in.** Only logged-in WordPress users can play, and each account gets one pilot.
+5. **Let players in.** The home page is public: visitors who are not signed in see an introduction,
+   the full How to play guide (the goal, objectives and rules) and the current standings, with
+   buttons to sign in or create an account. The other nine pages stay private.
+6. **Accounts.** Only logged-in WordPress users can play, and each account gets one pilot.
    Other players see only the pilot's alias, never the WordPress username. Either create user
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
    left as *Subscriber*). If registration is open, protect the registration form from bots with an
    anti-bot plugin such as *Simple Cloudflare Turnstile*. Players sign in, open
    the **IBO – Imperial Barons** page, and create a pilot.
-6. **Set up cron** so the hourly and daily game jobs run on time. See
+7. **Set up cron** so the hourly and daily game jobs run on time. See
    [Scheduled maintenance (cron)](#scheduled-maintenance-cron) below.
-7. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
+8. **Optional: tune the game** under **Imperial Barons Online → Settings**: turns per day, turn
    costs, starting credits and ship, prices, port regeneration, discovery chance and more.
 
 ### Game pages
