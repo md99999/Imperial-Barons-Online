@@ -21,6 +21,7 @@ class IB_UI {
         'team'      => ['IBO - Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
         'messages'  => ['IBO - Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
         'rankings'  => ['IBO - Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
+        'howto'     => ['IBO - How to Play', 'imperial-barons-online-how-to-play', 'ib_howto', 'How to Play'],
     ];
 
     public static function url($key, $args = []) {

@@ -83,7 +83,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    > Forging a universe erases any existing universe **and all player data**. Only do this to start
    > a new game.
 4. **Create the game pages.** Go to **Imperial Barons Online → Dashboard** and click
-   **Create pages & menu**. This creates the ten game pages below, each containing its shortcode,
+   **Create pages & menu**. This creates the game pages below, each containing its shortcode,
    and a site menu holding a single **Imperial Barons Online** link to the home page. Players move
    between game pages with the in-game navigation bar, so the menu never lists the other pages.
    **Assign menu to theme location** decides where that link appears: *Don't assign* (the default),
@@ -91,7 +91,9 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
    which creates a matching block navigation menu.
 5. **Let players in.** The home page is public: visitors who are not signed in see an introduction,
    the full How to play guide (the goal, objectives and rules) and the current standings, with
-   buttons to sign in or create an account. The other nine pages stay private.
+   buttons to sign in or create an account. The **How to Play** page is public too, and its
+   shortcode `[ib_howto]` can be dropped into any post or page of your own. The other game pages
+   stay private.
 6. **Accounts.** Only logged-in WordPress users can play, and each account gets one pilot.
    Other players see only the pilot's alias, never the WordPress username. Either create user
    accounts yourself, or enable **Settings → General → Anyone can register** (with the new-user role
@@ -121,6 +123,7 @@ created by earlier versions.
 | IBO - Team | `imperial-barons-online-team` | `[ib_team]` |
 | IBO - Messages | `imperial-barons-online-messages` | `[ib_messages]` |
 | IBO - Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
+| IBO - How to Play | `imperial-barons-online-how-to-play` | `[ib_howto]` |
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
 

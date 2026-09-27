@@ -2,10 +2,13 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * Registers the ten game shortcodes. Each renders a shared frame (status bar,
- * navigation, notices) around a view from includes/frontend/views.
+ * Registers the game shortcodes. Each renders a shared frame (status bar, navigation, notices)
+ * around a view from includes/frontend/views. They work in posts and pages alike; the home page
+ * and the How to Play guide also render for visitors who are not signed in.
  */
 class IB_Shortcodes {
+    /** Pages readable without signing in or having a pilot. */
+    const PUBLIC_PAGES = ['dashboard', 'howto'];
 
     public static function register() {
         foreach (IB_UI::PAGES as $key => $def) {
@@ -30,8 +33,8 @@ class IB_Shortcodes {
         if (!is_user_logged_in()) {
             // The home page doubles as the shop window: the guide and the standings are public,
             // so visitors can see what the game is before they sign up.
-            if ($key === 'dashboard') {
-                include IB_PATH . 'includes/frontend/views/_welcome.php';
+            if (in_array($key, self::PUBLIC_PAGES, true)) {
+                include IB_PATH . 'includes/frontend/views/' . ($key === 'dashboard' ? '_welcome' : $key) . '.php';
                 echo IB_UI::footer_bar(null);
             } else {
                 echo '<div class="ib-panel"><p>Pilots must sign in to fly.</p><p><a class="ib-btn" href="' . esc_url(wp_login_url(get_permalink())) . '">Sign in</a>';
@@ -52,7 +55,7 @@ class IB_Shortcodes {
                 echo IB_UI::nav($key, $p);
             }
             echo IB_UI::render_flashes();
-            if (!$p && $key !== 'dashboard') {
+            if (!$p && !in_array($key, self::PUBLIC_PAGES, true)) {
                 echo '<div class="ib-panel"><p>You need a pilot before you can fly.</p><p><a class="ib-btn" href="' . esc_url(IB_UI::url('dashboard')) . '">Create a pilot</a></p></div>';
             } else {
                 include IB_PATH . 'includes/frontend/views/' . $key . '.php';
