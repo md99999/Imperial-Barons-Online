@@ -25,6 +25,17 @@ $locations = get_registered_nav_menus();
     <p>Universe generated <?php echo esc_html($universe['generated_at']); ?> &middot; Drydock in sector <?php echo (int) $universe['drydock']; ?> &middot; seed <?php echo (int) $universe['seed']; ?></p>
 <?php endif; ?>
 
+<div class="ib-box" style="border-left:4px solid #996800;max-width:860px">
+    <h2 style="margin-top:0">Disclaimer</h2>
+    <p><strong>You run this plugin at your own risk. The author accepts no responsibility or liability for any loss,
+        damage or compromise arising from its use.</strong> Every effort has been made to write it safely, but new
+        vulnerabilities appear in software of every kind every day and no website can be guaranteed secure. It is
+        provided as is, without warranty of any kind, under the GNU General Public License v2.</p>
+    <p class="description">Test on a staging site first, keep backups of your database and files, keep WordPress, PHP,
+        your theme and plugins up to date, and serve the site over HTTPS. The Universe Forge and Reset tools erase game
+        data permanently and cannot be undone. Full details are in the plugin's <code>README.md</code>.</p>
+</div>
+
 <div class="ib-box">
     <h2>Game pages &amp; navigation menu</h2>
     <p>Creates any missing game pages, each containing its shortcode, and an <strong>Imperial Barons Online</strong> navigation menu with a single <em>Imperial Barons Online Home</em> link. Running it again repairs the menu.

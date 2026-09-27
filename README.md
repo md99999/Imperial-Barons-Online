@@ -31,6 +31,33 @@ by its creators or rights holders. *Trade Wars* is a trademark of its respective
 
 ---
 
+## Disclaimer: install and run at your own risk
+
+**You install and run this plugin entirely at your own risk. The author accepts no responsibility
+or liability for any loss, damage or compromise that results from using it.**
+
+Every effort has been made to write it safely: player actions are checked on the server, forms are
+protected against cross-site request forgery, database queries are prepared, output is escaped, and
+administrative functions require WordPress administrator rights. Even so, new vulnerabilities are
+discovered in software of every kind every day, and no website can be guaranteed secure. This
+software is provided **as is, without warranty of any kind**, as set out in the
+[GNU General Public License v2](LICENSE), under which it is released.
+
+Before installing it on a site you care about:
+
+- **Test it first** on a staging or local site rather than a live one.
+- **Back up your database and files**, and keep doing so. The Universe Forge and the Reset tool
+  both erase game data permanently, and that cannot be undone.
+- **Keep WordPress, PHP, your theme and every plugin up to date**, and serve the site over HTTPS.
+- **Protect player accounts.** The game relies on WordPress for registration, login and passwords,
+  so secure those as you would on any site, for example with an anti-bot plugin on the registration form.
+- **Read the code.** It is open source precisely so you can audit it, and change it, before trusting it.
+
+If you find a security problem, please report it by opening an issue at
+<https://github.com/md99999/Imperial-Barons-Online>.
+
+---
+
 ## The goal
 
 You begin as a **Vagrant** with a single Freetrader and a few thousand credits. Your aim is to rise

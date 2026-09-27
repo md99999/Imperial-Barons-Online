@@ -40,7 +40,8 @@ $validate = !empty($_GET['validate']);
         the Imperial Core around it, trading ports of classes 1-8, the Imperial Drydock, unclaimed planets and alien faction fleets.</p>
     <div class="ib-danger">
         <strong>Warning:</strong> the Universe Forge permanently erases the existing universe <em>and all player data</em>: pilots, teams, planets, messages and news.
-        Pilots must create new characters afterwards.
+        Pilots must create new characters afterwards. There is no undo: take a database backup first if the current
+        universe matters. You run this plugin at your own risk; the author accepts no responsibility for data loss.
     </div>
     <?php echo IB_Admin::form_open('forge'); ?>
         <table class="form-table" role="presentation">

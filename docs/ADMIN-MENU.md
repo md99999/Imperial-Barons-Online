@@ -10,3 +10,7 @@ Imperial Barons Online (wp-admin menu, requires `manage_options`)
 - Logs: admin audit log and the Imperial Gazette
 
 Every admin action posts to `admin-post.php` with a nonce and a capability check, and is recorded in the audit log.
+
+**Disclaimer:** you run this plugin at your own risk. Every effort has been made to write it safely,
+but no website can be guaranteed secure, and the author accepts no responsibility or liability for
+loss or damage arising from its use. See the Disclaimer section in the main README.

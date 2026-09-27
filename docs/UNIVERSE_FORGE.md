@@ -8,6 +8,10 @@ Universe Management menu
 - Export Universe: downloads sectors, warps, ports, planets and fleets as JSON
 - Reset Universe: erases everything without forging a new universe
 
+> **At your own risk.** Forging or resetting a universe permanently erases game data and cannot be
+> undone; take a database backup first. The plugin is provided as is, without warranty, and the
+> author accepts no responsibility for data loss. See the Disclaimer in the main README.
+
 Destructive actions require:
 1. Warning checkbox
 2. Typing `FORGE` (or `RESET`)
