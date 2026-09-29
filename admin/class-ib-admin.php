@@ -101,8 +101,20 @@ class IB_Admin {
         exit;
     }
 
+    /** A posted field as a string; non-scalars are discarded so sanitisers get what they expect. */
     private static function post($name, $default = '') {
-        return isset($_POST[$name]) ? wp_unslash($_POST[$name]) : $default;
+        if (!isset($_POST[$name]) || !is_scalar($_POST[$name])) return $default;
+        return wp_unslash((string) $_POST[$name]);
+    }
+
+    /** A posted array of settings, keys and values reduced to strings. */
+    private static function post_array($name) {
+        if (empty($_POST[$name]) || !is_array($_POST[$name])) return [];
+        $out = [];
+        foreach (wp_unslash($_POST[$name]) as $key => $value) {
+            if (is_scalar($value)) $out[sanitize_key($key)] = (string) $value;
+        }
+        return $out;
     }
 
     // ----- Handlers -----
@@ -240,7 +252,7 @@ class IB_Admin {
     }
 
     private static function do_save_settings() {
-        IB_Settings::update((array) self::post('ib', []));
+        IB_Settings::update(self::post_array('ib'));
         IB_Log::admin('settings', 'Settings updated.');
         self::notice('success', 'Settings saved.');
     }

@@ -26,6 +26,34 @@ This is a hobby project maintained by one person, so please be patient. The aim 
 a report within a week, agree what the problem is and how serious it is, fix it and release a new
 version, and credit you in the release notes if you would like that. No bounty is offered.
 
+## How input is handled
+
+For anyone auditing the plugin, this is the approach it takes. It is not a claim that the code is
+flawless: it is what to check, and where a mistake would most likely be.
+
+- **Every game action is a POST** carrying a WordPress nonce, checked with `wp_verify_nonce()`
+  before anything happens, and refused outright unless the visitor is signed in and has a pilot.
+- **Posted fields are read through one helper** that discards anything which is not a scalar, then
+  casts to the type wanted: `(int)` for quantities and ids, `sanitize_key()` for fixed choices such
+  as a commodity or action, `sanitize_text_field()` for names and `sanitize_textarea_field()` for
+  message bodies. Passwords are passed to WordPress's own hashing untouched.
+- **Every SQL statement with a variable in it uses `$wpdb->prepare()`** with placeholders. Values
+  are never concatenated into SQL.
+- **Where a column name is chosen at runtime** (moving cargo, trading a commodity), the name is
+  matched against a fixed whitelist in the code first, so a request cannot introduce one.
+- **Output is escaped at the point of printing** with `esc_html()`, `esc_attr()` or `esc_url()`,
+  and message text is escaped before `nl2br()`. Nothing from the database is echoed raw.
+- **No file paths come from user input.** The only dynamic `include` statements use keys from a
+  fixed list of pages, so directory traversal has nothing to act on.
+- **No shell, `eval()`, `unserialize()` or dynamic code execution** anywhere in the plugin.
+- **Ownership and capability are checked on the action, not the page.** Landing, cargo transfers,
+  recalling fighters and reading mail all verify that the pilot owns the thing; admin functions
+  require `manage_options` plus their own nonce. Hiding a link is never treated as a control.
+- **Redirects are validated** with `wp_validate_redirect()`, so a crafted form cannot bounce a
+  player off-site.
+- **Turn, credit and stock changes are atomic** single UPDATE statements with the guard in the
+  WHERE clause, so a double-submitted form cannot spend the same turn or credits twice.
+
 ## In scope
 
 Anything in this plugin's own code, for example:

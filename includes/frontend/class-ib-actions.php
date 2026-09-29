@@ -39,8 +39,14 @@ class IB_Actions {
         exit;
     }
 
+    /**
+     * A posted field as a string. Anything that is not a scalar (an array posted where a string
+     * is expected, say) is discarded rather than passed on, so the sanitisers below always get
+     * the type they expect.
+     */
     private static function field($name, $default = '') {
-        return isset($_POST[$name]) ? wp_unslash($_POST[$name]) : $default;
+        if (!isset($_POST[$name]) || !is_scalar($_POST[$name])) return $default;
+        return wp_unslash((string) $_POST[$name]);
     }
 
     private static function int($name) {
