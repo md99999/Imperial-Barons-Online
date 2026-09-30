@@ -157,6 +157,38 @@ created by earlier versions.
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
 
+### Widgets: putting the Gazette in a sidebar
+
+Every shortcode above also works in a **widget**, a **post** or any page of your own, which makes
+the Gazette a good advertisement for the game: visitors see a galaxy in motion, and it needs no
+account to read.
+
+**Block themes** (Twenty Twenty-Five and similar): open **Appearance → Editor → Patterns → template
+parts**, or edit the template you want, add a **Shortcode** block to the sidebar or footer area, and
+paste:
+
+```
+[ib_gazette limit="10" compact="1"]
+```
+
+**Classic themes** (Hello Elementor and similar): open **Appearance → Widgets**, add a **Shortcode**
+block (or a Custom HTML widget) to the sidebar, and paste the same line. Page builders such as
+Elementor have their own Shortcode element that works the same way.
+
+The Gazette takes two attributes:
+
+| Attribute | Default | Does |
+|---|---|---|
+| `limit` | 40 on a page, 10 when compact | how many dispatches to show, up to 200 |
+| `compact` | off | renders a plain list with no table, sized for a narrow column |
+
+In compact mode the output is the news panel alone: the masthead, the dispatches and a link to the
+full Gazette page. There is no game title, status bar, navigation or footer, whether or not the
+reader is signed in, and it stays inside its column rather than widening as the game pages do.
+
+The other shortcodes work in widgets too, though most only make sense for a signed-in pilot.
+`[ib_howto]` is the other useful public one, for a "how to play" post or landing page.
+
 ### Scheduled maintenance (cron)
 
 The game relies on two scheduled jobs:
