@@ -301,8 +301,11 @@ if another run currently holds the lock.
   Imperial Drydock also sells nine ship types, from the Freetrader to the Baronial Flagship, and
   Worldseeds for creating planets.
 - **Exploring.** Sensors sweep every neighbouring sector as you arrive, revealing ports, planets and
-  hostile fighters before you jump. First visits beyond the Imperial Core earn experience and may turn
-  up salvage, a credit cache, abandoned fighters, an old survey beacon, or a Reaver Pirates ambush.
+  hostile fighters before you jump, and you can warp straight there by tapping a sector in the sweep.
+  First visits beyond the Imperial Core earn experience and may turn up salvage, a credit cache,
+  abandoned fighters or an old survey beacon, or cost you: a meteoroid swarm takes cargo, a revenue
+  cutter collects the Crown's tithe, and a false distress call can be a Reaver Pirates ambush.
+  Everything that befalls a pilot out there is reported in the Gazette.
 - **The Computer.** Plot the shortest course to any sector, engage the autopilot, use the Port finder
   to locate the nearest ports that buy or sell a commodity, and review every known port's prices. Pair
   two neighbouring ports with opposite classes (for example SBB and BSS) for a profitable run in

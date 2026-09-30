@@ -10,7 +10,7 @@ class IB_Discovery {
     const MAX_DRONES = 5;
 
     /** Relative weights of each kind of find. */
-    const FINDS = ['salvage' => 35, 'cache' => 25, 'beacon' => 20, 'fighters' => 15, 'ambush' => 5];
+    const FINDS = ['salvage' => 30, 'cache' => 22, 'beacon' => 16, 'fighters' => 12, 'storm' => 8, 'tithe' => 7, 'ambush' => 5];
 
     /**
      * Called on a pilot's first visit to a sector outside the Imperial Core.
@@ -27,6 +27,12 @@ class IB_Discovery {
             if (($roll -= $weight) <= 0) break;
         }
         return [call_user_func([__CLASS__, 'find_' . $kind], $p) . ' (+1 experience)'];
+    }
+
+    /** Files a short dispatch with the Gazette about something that befell a pilot out on the frontier. */
+    private static function report($p, $line) {
+        IB_Log::news('discovery', sprintf('%s %s, in sector %d: %s',
+            IB_Game::rank_title($p->experience), $p->alias_name, $p->sector_id, $line));
     }
 
     private static function wreck_name() {
@@ -50,12 +56,14 @@ class IB_Discovery {
             return sprintf('You find %s drifting here. Your holds are full, so you strip its credit chip instead: %s credits.', $wreck, IB_Game::fmt($credits));
         }
         IB_Player::add($p, [$commodity => $qty]);
+        self::report($p, sprintf('salvaged %d units of %s from %s.', $qty, IB_Game::label($commodity), $wreck));
         return sprintf('You find %s drifting here and salvage %d units of %s.', $wreck, $qty, IB_Game::label($commodity));
     }
 
     private static function find_cache($p) {
         $credits = self::credit_find($p, 100, 600);
-        return sprintf('Your sensors pick up a smuggler\'s cache hidden in an asteroid: %s credits!', IB_Game::fmt($credits));
+        self::report($p, sprintf("found a smuggler's cache worth %s credits.", IB_Game::fmt($credits)));
+        return sprintf("Your sensors pick up a smuggler's cache hidden in an asteroid: %s credits!", IB_Game::fmt($credits));
     }
 
     private static function find_fighters($p) {
@@ -66,12 +74,14 @@ class IB_Discovery {
             return sprintf('You find abandoned fighters but have no room for them, so you sell their targeting cores for %s credits.', IB_Game::fmt($credits));
         }
         IB_Player::add($p, ['fighters' => $qty]);
+        self::report($p, sprintf('recovered %d abandoned fighters.', $qty));
         return sprintf('%d abandoned fighters answer your recall signal and dock with your ship.', $qty);
     }
 
     private static function find_beacon($p) {
         $sectors = array_keys(IB_Pathfinder::distances(null, (int) $p->sector_id, self::BEACON_RADIUS));
         $added = IB_Player::chart($p->id, $sectors);
+        if ($added) self::report($p, sprintf('woke an old survey beacon and charted %d more sectors.', $added));
         return $added
             ? sprintf('An old Imperial survey beacon uploads its charts: %d more sectors added to your map.', $added)
             : 'An old Imperial survey beacon hails you, but its charts hold nothing you don\'t already know.';
@@ -84,7 +94,36 @@ class IB_Discovery {
             'sector_id' => $p->sector_id, 'fighter_count' => mt_rand(15, 50), 'fleet_mode' => 'offensive',
             'created_at' => current_time('mysql'),
         ]);
+        self::report($p, 'was ambushed by Reaver Pirates lying in wait behind a false distress call.');
         return 'A distress call lures you in... it is a trap! Reaver Pirates drop out of hiding.';
+    }
+
+    /** A meteoroid swarm or a hull breach: some of the cargo goes out into the dark. */
+    private static function find_storm($p) {
+        $carried = [];
+        foreach (array_keys(IB_Game::COMMODITIES) as $key) {
+            if ((int) $p->$key > 0) $carried[] = $key;
+        }
+        if (!$carried) {
+            return 'A meteoroid swarm rattles the hull. With empty holds you have nothing to lose, and fly on.';
+        }
+        $commodity = $carried[array_rand($carried)];
+        $lost = max(1, (int) round((int) $p->$commodity * mt_rand(10, 35) / 100));
+        IB_Player::add($p, [$commodity => -$lost]);
+        self::report($p, sprintf('lost %d units of %s to a meteoroid swarm.', $lost, IB_Game::label($commodity)));
+        return sprintf('A meteoroid swarm tears through a cargo bay: %d units of %s are lost to the dark.',
+            $lost, IB_Game::label($commodity));
+    }
+
+    /** A revenue cutter collects the Crown's due from passing traders. */
+    private static function find_tithe($p) {
+        $due = min((int) $p->credits, max(50, (int) round((int) $p->credits * mt_rand(3, 8) / 100)));
+        if ($due < 1) {
+            return "A revenue cutter hails you for the Crown's tithe, finds your accounts empty, and waves you on.";
+        }
+        IB_Player::add($p, ['credits' => -$due]);
+        self::report($p, sprintf('paid a tithe of %s credits to a revenue cutter.', IB_Game::fmt($due)));
+        return sprintf("A revenue cutter collects the Crown's tithe: %s credits.", IB_Game::fmt($due));
     }
 
     public static function launch_drone($p) {

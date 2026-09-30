@@ -8,13 +8,13 @@ $news = IB_Messages::news(100);
 $labels = [
     'forge' => 'Creation', 'new_player' => 'New pilot', 'destroyed' => 'Ship lost',
     'planet' => 'Planets', 'worldseed' => 'Worldseed', 'ship' => 'Shipyard',
-    'team' => 'Teams', 'turns_spent' => 'Turns', 'bigbang' => 'Creation',
+    'team' => 'Teams', 'turns_spent' => 'Turns', 'bigbang' => 'Creation', 'discovery' => 'Frontier',
 ];
 ?>
 <div class="ib-panel">
     <h2>The Imperial Gazette</h2>
     <p class="ib-small ib-dim">Dispatches from across the Imperium: pilots taking to the spacelanes and flying their
-        last turn of the day, worlds claimed and seeded, ships bought and lost, and houses founded.
+        last turn of the day, worlds claimed and seeded, ships bought and lost, houses founded, and what befalls pilots out on the frontier.
         <?php echo (int) IB_Settings::get('news_retention_days'); ?> days of news are kept.</p>
 
     <?php if (!$news) : ?>
