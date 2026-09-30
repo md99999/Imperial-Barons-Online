@@ -18,6 +18,8 @@
   --ib-red: #ff8080;
   --ib-blue: #86bcff;
   --ib-ink: #04070d;
+  --ib-field: #111b2e;
+  --ib-field-border: #6c9bd8;
   --ib-font: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 
   /* How far the game breaks out of the theme's content column, each side. */
@@ -127,11 +129,26 @@
 .ib-game.ib-game .ib-btn-small { padding: 3px 8px; font-size: .82em; }
 .ib-game .ib-btn:focus-visible, .ib-game a:focus-visible, .ib-game input:focus-visible, .ib-game select:focus-visible, .ib-game textarea:focus-visible { outline: 2px solid var(--ib-yellow); outline-offset: 2px; }
 
+/*
+ * Entry fields. The old 1px border in the panel colour was only 1.48:1 against the panel, so on a
+ * phone you could not see where to tap. They now sit on a lighter field colour with a clearly
+ * visible border (6.5:1), and grow a brighter border and a glow when focused.
+ */
 .ib-game.ib-game input[type=text], .ib-game.ib-game input[type=number], .ib-game.ib-game input[type=password],
 .ib-game.ib-game select, .ib-game.ib-game textarea {
-  font-family: var(--ib-font); font-size: .95em; background: #000; color: var(--ib-yellow);
-  border: 1px solid var(--ib-border); border-radius: 3px; padding: 5px 7px; max-width: 100%;
+  font-family: var(--ib-font); font-size: .95em; background: var(--ib-field); color: var(--ib-yellow);
+  border: 1px solid var(--ib-field-border); border-radius: 3px; padding: 6px 8px; max-width: 100%;
+  min-height: 36px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45);
 }
+.ib-game.ib-game input[type=text]:hover, .ib-game.ib-game input[type=number]:hover,
+.ib-game.ib-game input[type=password]:hover, .ib-game.ib-game select:hover, .ib-game.ib-game textarea:hover {
+  border-color: var(--ib-cyan);
+}
+.ib-game.ib-game input[type=text]:focus, .ib-game.ib-game input[type=number]:focus,
+.ib-game.ib-game input[type=password]:focus, .ib-game.ib-game select:focus, .ib-game.ib-game textarea:focus {
+  border-color: var(--ib-cyan); background: #0a1322; box-shadow: 0 0 0 2px rgba(127, 251, 255, .35);
+}
+.ib-game.ib-game input::placeholder, .ib-game.ib-game textarea::placeholder { color: var(--ib-dim); opacity: 1; }
 .ib-game textarea { width: 100%; }
 .ib-num { width: 7em; }
 .ib-inline { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 4px 2px 0; }
@@ -219,5 +236,9 @@
 @media (max-width: 600px) {
   .ib-game { padding: 10px; font-size: 14px; border-radius: 0; }
   .ib-kv th { width: auto; }
-  .ib-num { width: 5.5em; }
+  .ib-num { width: 6em; }
+  /* 16px stops iOS zooming in on focus; 44px is a comfortable tap target. */
+  .ib-game.ib-game input[type=text], .ib-game.ib-game input[type=number], .ib-game.ib-game input[type=password],
+  .ib-game.ib-game select, .ib-game.ib-game textarea { font-size: 16px; min-height: 44px; }
+  .ib-game.ib-game .ib-btn { min-height: 40px; padding: 9px 14px; }
 }
