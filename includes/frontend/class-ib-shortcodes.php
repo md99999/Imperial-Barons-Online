@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
  */
 class IB_Shortcodes {
     /** Pages readable without signing in or having a pilot. */
-    const PUBLIC_PAGES = ['dashboard', 'howto'];
+    const PUBLIC_PAGES = ['dashboard', 'howto', 'gazette'];
 
     public static function register() {
         foreach (IB_UI::PAGES as $key => $def) {

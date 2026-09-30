@@ -111,6 +111,10 @@ class IB_Player {
             throw new IB_Game_Exception(sprintf('You need %d turn(s) and have %d left. Turns reset daily.', $n, $p->turns_remaining));
         }
         $p->turns_remaining -= $n;
+        if ($p->turns_remaining === 0) {
+            IB_Log::news('turns_spent', sprintf('%s %s has flown the last turn of the day.',
+                IB_Game::rank_title($p->experience), $p->alias_name));
+        }
     }
 
     /** Atomically deducts credits or throws. */

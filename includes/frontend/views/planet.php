@@ -148,12 +148,12 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
         <div class="ib-panel">
             <h3>Vault</h3>
             <?php if ($level) : ?>
-                <?php echo IB_UI::form_open('Vault', 'ib-inline'); ?>
+                <?php echo IB_UI::form_open('vault', 'ib-inline'); ?>
                     <input type="hidden" name="dir" value="deposit">
                     <input type="number" name="amount" min="1" max="<?php echo (int) $p->credits; ?>" value="<?php echo (int) $p->credits; ?>" class="ib-num" aria-label="Deposit amount">
                     <button type="submit" class="ib-btn">Deposit</button>
                 </form>
-                <?php echo IB_UI::form_open('Vault', 'ib-inline'); ?>
+                <?php echo IB_UI::form_open('vault', 'ib-inline'); ?>
                     <input type="hidden" name="dir" value="withdraw">
                     <input type="number" name="amount" min="1" max="<?php echo (int) $planet->bastion_vault; ?>" value="<?php echo (int) $planet->bastion_vault; ?>" class="ib-num" aria-label="Withdraw amount">
                     <button type="submit" class="ib-btn ib-btn-alt">Withdraw</button>

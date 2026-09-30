@@ -55,11 +55,12 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
     <h3>Sensor sweep</h3>
     <div class="ib-table-wrap">
     <table class="ib-table">
-        <thead><tr><th>Sector</th><th>Nebula</th><th>Port</th><th>Planets</th><th>Hostile fighters</th><th>Status</th></tr></thead>
+        <thead><tr><th>Jump to</th><th>Nebula</th><th>Port</th><th>Planets</th><th>Hostile fighters</th><th>Status</th></tr></thead>
         <tbody>
         <?php foreach ($scan as $to => $s) : ?>
             <tr>
-                <td><?php echo (int) $to; ?></td>
+                <td><?php echo IB_UI::button('move', (string) (int) $to, ['to' => $to], 'ib-btn-small' . (isset($visited[$to]) ? ' ib-btn-alt' : ''),
+                        $s['hostile'] ? sprintf('Sector %d holds %s hostile fighters. Jump anyway?', $to, IB_Game::fmt($s['hostile'])) : ''); ?></td>
                 <td><?php echo $s['sector'] ? esc_html($s['sector']->nebula) : ''; ?></td>
                 <td><?php echo $s['port'] ? IB_UI::pattern($s['port']) : '<span class="ib-dim">none</span>'; ?></td>
                 <td><?php echo $s['planets'] ?: '<span class="ib-dim">0</span>'; ?></td>
@@ -70,6 +71,8 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
         </tbody>
     </table>
     </div>
+    <p class="ib-small ib-dim">Tap a sector number to warp straight there (<?php echo (int) IB_Settings::get('move_turn_cost'); ?> turn).
+        Unvisited sectors are highlighted; a jump into hostile fighters asks first.</p>
     <?php if ((int) $p->survey_drones > 0) : ?>
         <?php echo IB_UI::button('launch_drone', sprintf('Launch survey drone (%d left): chart everything within %d warps', (int) $p->survey_drones, IB_Discovery::DRONE_RADIUS), [], 'ib-btn-alt'); ?>
     <?php else : ?>

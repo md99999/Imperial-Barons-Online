@@ -21,6 +21,7 @@ class IB_UI {
         'team'      => ['Imperial Barons - Team', 'imperial-barons-online-team', 'ib_team', 'Team'],
         'messages'  => ['Imperial Barons - Messages', 'imperial-barons-online-messages', 'ib_messages', 'Messages'],
         'rankings'  => ['Imperial Barons - Rankings', 'imperial-barons-online-rankings', 'ib_rankings', 'Rankings'],
+        'gazette'   => ['Imperial Barons - Gazette', 'imperial-barons-online-gazette', 'ib_gazette', 'Gazette'],
         'howto'     => ['Imperial Barons - How to Play', 'imperial-barons-online-how-to-play', 'ib_howto', 'How to Play'],
     ];
 
@@ -80,6 +81,11 @@ class IB_UI {
      * the same URL as the request, which is exactly the case for these self-posting forms.)
      */
     public static function form_open($action, $class = '') {
+        // sanitize_key() lowercases the action on the way back in, so a name with a capital in it
+        // would never match its handler. Catch that while developing rather than in play.
+        if (defined('WP_DEBUG') && WP_DEBUG && $action !== sanitize_key($action)) {
+            trigger_error('Imperial Barons: action name "' . esc_html($action) . '" must be lowercase.', E_USER_WARNING);
+        }
         return '<form method="post" class="ib-form ' . esc_attr($class) . '">'
             . '<input type="hidden" name="ib_action" value="' . esc_attr($action) . '">'
             . '<input type="hidden" name="ib_return" value="' . esc_url(self::current_url()) . '">'

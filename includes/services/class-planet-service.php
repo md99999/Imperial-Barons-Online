@@ -115,6 +115,10 @@ class IB_Planets {
         $previous = (int) $planet->owner_player_id;
         self::set_owner($planet, $p);
         IB_Player::add($p, ['experience' => 5]);
+        if (!$previous) {
+            IB_Log::news('planet', sprintf('%s claimed the %s planet %s in sector %d.',
+                $p->alias_name, self::class_name($planet->planet_class), $planet->planet_name, $planet->sector_id));
+        }
         if ($previous) {
             IB_Messages::system($previous, 'Planet lost', sprintf('%s has seized your planet %s in sector %d.', $p->alias_name, $planet->planet_name, $planet->sector_id));
             IB_Log::news('planet', sprintf('%s captured the planet %s in sector %d.', $p->alias_name, $planet->planet_name, $planet->sector_id));
@@ -183,7 +187,7 @@ class IB_Planets {
     }
 
     /** $dir is 'deposit' or 'withdraw'. */
-    public static function Vault($p, $dir, $amount) {
+    public static function vault($p, $dir, $amount) {
         global $wpdb;
         $planet = self::require_friendly($p);
         if ((int) $planet->bastion_level < 1) throw new IB_Game_Exception('Build a bastion to get a Vault.');

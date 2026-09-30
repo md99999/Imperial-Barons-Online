@@ -120,7 +120,8 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
 5. **Let players in.** The home page is public: visitors who are not signed in see an introduction,
    the full How to play guide (the goal, objectives and rules) and the current standings, with
    buttons to sign in or create an account. The **How to Play** page is public too, and its
-   shortcode `[ib_howto]` can be dropped into any post or page of your own. The other game pages
+   shortcode `[ib_howto]` can be dropped into any post or page of your own, as can the Gazette's
+   `[ib_gazette]`. The other game pages
    stay private.
 6. **Accounts.** Only logged-in WordPress users can play, and each account gets one pilot.
    Other players see only the pilot's alias, never the WordPress username. Either create user
@@ -151,6 +152,7 @@ created by earlier versions.
 | Imperial Barons - Team | `imperial-barons-online-team` | `[ib_team]` |
 | Imperial Barons - Messages | `imperial-barons-online-messages` | `[ib_messages]` |
 | Imperial Barons - Rankings | `imperial-barons-online-rankings` | `[ib_rankings]` |
+| Imperial Barons - Gazette | `imperial-barons-online-gazette` | `[ib_gazette]` |
 | Imperial Barons - How to Play | `imperial-barons-online-how-to-play` | `[ib_howto]` |
 
 If you create pages by hand, keep these slugs; the plugin finds pages by slug.
