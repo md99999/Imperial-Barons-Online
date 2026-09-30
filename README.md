@@ -321,8 +321,8 @@ if another run currently holds the lock.
   visited; worlds claimed, seeded, fortified and stormed; trades of 10,000 credits or more; ships
   bought and lost; duels between pilots; alien fleets broken and sectors garrisoned; promotions
   through the peerage; houses founded and joined; and what befalls pilots on the frontier. News is
-  kept for the number of days set in Settings. Its masthead is the `IB_GAZETTE_NAME` constant in
-  the plugin's main file.
+  kept for the number of days set in Settings. Its masthead, "The Imperial Barons Gazette", is the
+  `IB_GAZETTE_NAME` constant in the plugin's main file.
 
   The feed can go anywhere with its shortcode, which takes two attributes. In compact mode the
   output is the Gazette panel alone: no game title, status bar, navigation or footer, whether or
