@@ -316,6 +316,18 @@ if another run currently holds the lock.
   Vraxori Syndicate, Gorvath Clans, Reaver Pirates, Myrrak Swarm, Thaloruun Dominion and Zephryl
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
   Freetrader and are grounded until tomorrow.
+- **The Imperial Gazette.** A public news page, readable without an account, carrying the galaxy's
+  highlights: pilots joining and flying their last turn of the day, worlds claimed, seeded and
+  fortified, trades of 10,000 credits or more, ships bought and lost, alien fleets broken,
+  promotions through the peerage, houses founded, and what befalls pilots on the frontier. News is
+  kept for the number of days set in Settings.
+
+  The feed can go anywhere with its shortcode, which takes two attributes:
+
+  ```
+  [ib_gazette]                         the full page: 40 dispatches in a table
+  [ib_gazette limit="10" compact="1"]  a plain list for a sidebar widget; 200 dispatches at most
+  ```
 
 The full guide is under **How to play** on the Imperial Barons page.
 
