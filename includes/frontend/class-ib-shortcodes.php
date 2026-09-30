@@ -39,8 +39,23 @@ class IB_Shortcodes {
         wp_enqueue_script('imperial-barons-online');
 
         ob_start();
-        $compact = !empty($atts['compact']) ? ' ib-compact' : '';
-        echo '<div class="ib-game ib-page-' . esc_attr($key) . esc_attr($compact) . '">';
+
+        // Compact is for a widget: the panel and nothing else. No game title, status bar, turn bar,
+        // navigation, notices or footer, whether or not the reader is signed in.
+        if (!empty($atts['compact'])) {
+            echo '<div class="ib-game ib-page-' . esc_attr($key) . ' ib-compact">';
+            $p = is_user_logged_in() ? IB_Player::current() : null;
+            if (in_array($key, self::PUBLIC_PAGES, true) && IB_Game::universe_exists()) {
+                include IB_PATH . 'includes/frontend/views/' . ($key === 'dashboard' ? '_welcome' : $key) . '.php';
+            } else {
+                echo '<div class="ib-panel"><p class="ib-small"><a href="' . esc_url(IB_UI::url('dashboard')) . '">'
+                    . esc_html(IB_GAME_NAME) . '</a></p></div>';
+            }
+            echo '</div>';
+            return ob_get_clean();
+        }
+
+        echo '<div class="ib-game ib-page-' . esc_attr($key) . '">';
         echo '<div class="ib-title">' . esc_html(IB_GAME_NAME) . '</div>';
 
         if (!is_user_logged_in()) {

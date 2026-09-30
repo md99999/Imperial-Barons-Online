@@ -25,7 +25,7 @@ $labels = [
 ?>
 <?php if ($compact) : ?>
     <div class="ib-panel ib-gazette-compact">
-        <h3>Imperial Gazette</h3>
+        <h3>The Imperial Gazette</h3>
         <?php if (!$news) : ?>
             <p class="ib-dim ib-small">No dispatches yet.</p>
         <?php else : ?>

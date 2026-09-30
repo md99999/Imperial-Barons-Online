@@ -322,7 +322,9 @@ if another run currently holds the lock.
   promotions through the peerage, houses founded, and what befalls pilots on the frontier. News is
   kept for the number of days set in Settings.
 
-  The feed can go anywhere with its shortcode, which takes two attributes:
+  The feed can go anywhere with its shortcode, which takes two attributes. In compact mode the
+  output is the Gazette panel alone: no game title, status bar, navigation or footer, whether or
+  not the reader is signed in.
 
   ```
   [ib_gazette]                         the full page: 40 dispatches in a table
