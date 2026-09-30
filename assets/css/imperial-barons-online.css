@@ -48,7 +48,12 @@
     margin-left: 50%;
     transform: translateX(-50%);
   }
+  /* A compact feed lives in someone else's column (a sidebar widget), so it stays inside it. */
+  .ib-game.ib-compact { width: auto; margin-left: 0; transform: none; }
 }
+.ib-game.ib-compact { padding: 10px; font-size: 14px; }
+.ib-game.ib-compact .ib-title { display: none; }
+.ib-game.ib-compact .ib-panel { margin-bottom: 0; }
 .ib-game *, .ib-game *::before, .ib-game *::after { box-sizing: border-box; }
 
 /* Base typography: force the game's own colours and monospace font over the theme's. */

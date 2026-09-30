@@ -130,9 +130,10 @@ class IB_Player {
         $p->credits -= $amount;
     }
 
-    /** Adds (or subtracts) values from integer columns. */
+    /** Adds (or subtracts) values from integer columns, announcing any promotion that results. */
     public static function add($p, array $deltas) {
         global $wpdb;
+        $rank_before = isset($deltas['experience']) ? IB_Game::rank_title($p->experience) : null;
         $sets = [];
         foreach ($deltas as $col => $delta) {
             if (!in_array($col, self::COUNTERS, true)) continue;
@@ -140,6 +141,14 @@ class IB_Player {
             $p->$col += (int) $delta;
         }
         if ($sets) $wpdb->query('UPDATE ' . IB_DB::t('players') . ' SET ' . implode(', ', $sets) . $wpdb->prepare(' WHERE id = %d', $p->id));
+        if ($rank_before !== null) {
+            $rank_after = IB_Game::rank_title($p->experience);
+            if ($rank_after !== $rank_before) {
+                IB_Log::news('promotion', sprintf('%s has been raised to %s.', $p->alias_name, $rank_after));
+                IB_Messages::system($p->id, 'You have been promoted',
+                    sprintf('The Chancery has raised you from %s to %s. Congratulations, %s.', $rank_before, $rank_after, $rank_after));
+            }
+        }
     }
 
     public static function update($p, array $data) {

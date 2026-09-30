@@ -10,15 +10,27 @@ class IB_Shortcodes {
     /** Pages readable without signing in or having a pilot. */
     const PUBLIC_PAGES = ['dashboard', 'howto', 'gazette'];
 
+    /** Attributes the current shortcode was called with; views read them through atts(). */
+    private static $atts = [];
+
     public static function register() {
         foreach (IB_UI::PAGES as $key => $def) {
-            add_shortcode($def[2], function () use ($key) {
-                return IB_Shortcodes::render($key);
+            add_shortcode($def[2], function ($atts) use ($key) {
+                return IB_Shortcodes::render($key, is_array($atts) ? $atts : []);
             });
         }
     }
 
-    public static function render($key) {
+    /**
+     * A shortcode attribute, for views that accept them.
+     * The Gazette takes limit="20" and compact="1", which suits a sidebar widget.
+     */
+    public static function att($name, $default = '') {
+        return isset(self::$atts[$name]) ? self::$atts[$name] : $default;
+    }
+
+    public static function render($key, $atts = []) {
+        self::$atts = $atts;
         // Shortcodes can run in admin/REST contexts (block editor previews); keep those cheap.
         if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST)) {
             return '<p>[Imperial Barons Online: ' . esc_html(IB_UI::PAGES[$key][0]) . ']</p>';
@@ -27,7 +39,8 @@ class IB_Shortcodes {
         wp_enqueue_script('imperial-barons-online');
 
         ob_start();
-        echo '<div class="ib-game ib-page-' . esc_attr($key) . '">';
+        $compact = !empty($atts['compact']) ? ' ib-compact' : '';
+        echo '<div class="ib-game ib-page-' . esc_attr($key) . esc_attr($compact) . '">';
         echo '<div class="ib-title">' . esc_html(IB_GAME_NAME) . '</div>';
 
         if (!is_user_logged_in()) {

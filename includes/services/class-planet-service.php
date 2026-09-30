@@ -183,6 +183,8 @@ class IB_Planets {
             $next, $req['ore'], $req['organics'], $req['equipment'], $planet->id
         ));
         IB_Player::add($p, ['experience' => 10 * $next]);
+        IB_Log::news('bastion', sprintf('%s completed a level %d bastion (%s) on %s in sector %d.',
+            $p->alias_name, $next, $req['name'], $planet->planet_name, $planet->sector_id));
         return sprintf('Construction complete: %s now has a level %d bastion (%s).', $planet->planet_name, $next, $req['name']);
     }
 

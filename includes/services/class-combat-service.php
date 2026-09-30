@@ -144,7 +144,13 @@ class IB_Combat {
             ));
         }
         IB_Player::add($p, $deltas);
-        if ($left === 0) $msg .= ' The sector is clear.';
+        if ($left === 0) {
+            $msg .= ' The sector is clear.';
+            if (!(int) $fleet->owner_player_id && $killed >= 50) {
+                IB_Log::news('combat', sprintf('%s %s broke a %s force of %s fighters in sector %d.',
+                    IB_Game::rank_title($p->experience), $p->alias_name, $owner, IB_Game::fmt($killed), $p->sector_id));
+            }
+        }
         return $msg;
     }
 

@@ -18,6 +18,9 @@ class IB_Ports {
     const SHIPYARD = 9;
     const MAX_WORLDSEEDS_CARRIED = 5;
 
+    /** A single trade worth at least this many credits is reported in the Gazette. */
+    const NEWSWORTHY_TRADE = 10000;
+
     public static function class_code($class) {
         $class = (int) $class;
         if ($class === self::ARMORY) return 'Armory';
@@ -160,6 +163,11 @@ class IB_Ports {
             $msg = sprintf('You sold %s %s at %s cr each for %s credits.', IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total));
         }
         if ($exp > 1) $msg .= ' "You drive a hard bargain, trader." (+' . $exp . ' experience)';
+        if ($total >= self::NEWSWORTHY_TRADE) {
+            IB_Log::news('trade', sprintf('%s %s %s %s units of %s at %s for %s credits.',
+                IB_Game::rank_title($p->experience), $p->alias_name, $mode === 'selling' ? 'bought' : 'sold',
+                IB_Game::fmt($qty), $label, $port->port_name, IB_Game::fmt($total)));
+        }
         return $msg;
     }
 
