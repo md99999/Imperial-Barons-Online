@@ -56,7 +56,7 @@ $news = IB_Messages::news(12);
 <?php endif; ?>
 
 <div class="ib-panel">
-    <h2>Imperial Gazette</h2>
+    <h2><?php echo esc_html(IB_GAZETTE_NAME); ?></h2>
     <?php if (!$news) : ?>
         <p class="ib-dim">All quiet across the galaxy.</p>
     <?php else : ?>

@@ -20,12 +20,12 @@ $labels = [
     'forge' => 'Creation', 'bigbang' => 'Creation', 'new_player' => 'New pilot', 'destroyed' => 'Ship lost',
     'planet' => 'Planets', 'worldseed' => 'Worldseed', 'ship' => 'Shipyard', 'team' => 'Teams',
     'turns_spent' => 'Turns', 'discovery' => 'Frontier', 'promotion' => 'Promotion',
-    'trade' => 'Trade', 'bastion' => 'Bastion', 'combat' => 'Combat',
+    'trade' => 'Trade', 'bastion' => 'Bastion', 'combat' => 'Combat', 'explore' => 'Exploration',
 ];
 ?>
 <?php if ($compact) : ?>
     <div class="ib-panel ib-gazette-compact">
-        <h3>The Imperial Gazette</h3>
+        <h3><?php echo esc_html(IB_GAZETTE_NAME); ?></h3>
         <?php if (!$news) : ?>
             <p class="ib-dim ib-small">No dispatches yet.</p>
         <?php else : ?>
@@ -41,7 +41,7 @@ $labels = [
 <?php return; endif; ?>
 
 <div class="ib-panel">
-    <h2>The Imperial Gazette</h2>
+    <h2><?php echo esc_html(IB_GAZETTE_NAME); ?></h2>
     <p class="ib-small ib-dim">Dispatches from across the Imperium: pilots joining and flying their last turn of the day,
         worlds claimed, seeded and fortified, great trades struck, ships bought and lost, alien fleets broken, titles won,
         houses founded, and what befalls pilots out on the frontier.

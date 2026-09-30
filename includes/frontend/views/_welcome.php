@@ -84,7 +84,7 @@ $has_universe = IB_Game::universe_exists();
 
     <?php if ($news) : ?>
         <div class="ib-panel">
-            <h3>Imperial Gazette</h3>
+            <h3><?php echo esc_html(IB_GAZETTE_NAME); ?></h3>
             <ul class="ib-news">
                 <?php foreach ($news as $n) : ?>
                     <li><span class="ib-dim"><?php echo esc_html(IB_UI::time_ago($n->created_at)); ?></span> <?php echo esc_html($n->message); ?></li>

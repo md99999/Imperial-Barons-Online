@@ -21,7 +21,7 @@ $news = IB_Messages::news(100);
     </tbody>
 </table>
 
-<h2>Imperial Gazette</h2>
+<h2><?php echo esc_html(IB_GAZETTE_NAME); ?></h2>
 <table class="widefat striped">
     <thead><tr><th>When</th><th>Type</th><th>Message</th></tr></thead>
     <tbody>

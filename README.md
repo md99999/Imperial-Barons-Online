@@ -316,11 +316,13 @@ if another run currently holds the lock.
   Vraxori Syndicate, Gorvath Clans, Reaver Pirates, Myrrak Swarm, Thaloruun Dominion and Zephryl
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
   Freetrader and are grounded until tomorrow.
-- **The Imperial Gazette.** A public news page, readable without an account, carrying the galaxy's
-  highlights: pilots joining and flying their last turn of the day, worlds claimed, seeded and
-  fortified, trades of 10,000 credits or more, ships bought and lost, alien fleets broken,
-  promotions through the peerage, houses founded, and what befalls pilots on the frontier. News is
-  kept for the number of days set in Settings.
+- **The Gazette.** A public news page, readable without an account, carrying the galaxy's
+  highlights: pilots joining, flying their last turn of the day and passing every 50th sector
+  visited; worlds claimed, seeded, fortified and stormed; trades of 10,000 credits or more; ships
+  bought and lost; duels between pilots; alien fleets broken and sectors garrisoned; promotions
+  through the peerage; houses founded and joined; and what befalls pilots on the frontier. News is
+  kept for the number of days set in Settings. Its masthead is the `IB_GAZETTE_NAME` constant in
+  the plugin's main file.
 
   The feed can go anywhere with its shortcode, which takes two attributes. In compact mode the
   output is the Gazette panel alone: no game title, status bar, navigation or footer, whether or

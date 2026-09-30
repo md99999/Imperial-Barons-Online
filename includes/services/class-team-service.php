@@ -68,6 +68,7 @@ class IB_Teams {
         self::set_player_team($p->id, $team->id);
         $p->team_id = $team->id;
         self::broadcast($team->id, 0, 'New member', sprintf('%s has joined the team.', $p->alias_name));
+        IB_Log::news('team', sprintf('%s has joined the house of %s.', $p->alias_name, $team->team_name));
         return sprintf('Welcome to %s!', $team->team_name);
     }
 

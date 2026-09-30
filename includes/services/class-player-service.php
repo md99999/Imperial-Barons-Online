@@ -216,7 +216,21 @@ class IB_Player {
     public static function arrive($p) {
         $first = self::mark_visited($p->id, $p->sector_id);
         self::chart($p->id, self::warps_from($p->sector_id));
-        return $first ? IB_Discovery::first_visit($p) : [];
+        if (!$first) return [];
+        self::report_exploration($p);
+        return IB_Discovery::first_visit($p);
+    }
+
+    /** Every 50th sector visited is worth a line in the Gazette. */
+    private static function report_exploration($p) {
+        global $wpdb;
+        $visited = (int) $wpdb->get_var($wpdb->prepare(
+            'SELECT COUNT(*) FROM ' . IB_DB::t('explored') . ' WHERE player_id = %d AND visited = 1', $p->id
+        ));
+        if ($visited > 0 && $visited % 50 === 0) {
+            IB_Log::news('explore', sprintf('%s %s has now visited %s sectors of the galaxy.',
+                IB_Game::rank_title($p->experience), $p->alias_name, IB_Game::fmt($visited)));
+        }
     }
 
     public static function warps_from($sector_id) {

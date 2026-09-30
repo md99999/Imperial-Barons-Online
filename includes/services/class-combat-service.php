@@ -75,6 +75,8 @@ class IB_Combat {
             if ((int) $p->team_id) IB_Teams::award_medal($p->team_id);
             return $summary . sprintf(' %s\'s ship explodes in a brilliant fireball!', $target->alias_name);
         }
+        IB_Log::news('combat', sprintf('%s %s attacked %s in sector %d; both ships survived the exchange.',
+            IB_Game::rank_title($p->experience), $p->alias_name, $target->alias_name, $p->sector_id));
         IB_Messages::system($target->id, 'You were attacked', sprintf(
             '%s attacked you in sector %d. You lost %s fighters and %s shield points; they lost %s fighters.',
             $p->alias_name, $p->sector_id, IB_Game::fmt($r['def_fighters_lost']), IB_Game::fmt($r['def_shields_lost']), IB_Game::fmt($r['att_lost'])
@@ -170,7 +172,11 @@ class IB_Combat {
 
         $msg = sprintf('You lost %s fighters. The planet lost %s fighters (%s remain).',
             IB_Game::fmt($r['att_lost']), IB_Game::fmt($r['def_fighters_lost']), IB_Game::fmt($left));
-        if ($left === 0) $msg .= ' Its defenses are down. Land and claim it!';
+        if ($left === 0) {
+            $msg .= ' Its defenses are down. Land and claim it!';
+            IB_Log::news('combat', sprintf('%s %s broke the defenses of %s in sector %d.',
+                IB_Game::rank_title($p->experience), $p->alias_name, $planet->planet_name, $planet->sector_id));
+        }
         if ((int) $planet->owner_player_id) {
             IB_Messages::system($planet->owner_player_id, 'Planet under attack', sprintf(
                 '%s attacked %s in sector %d. %s defending fighters remain.', $p->alias_name, $planet->planet_name, $planet->sector_id, IB_Game::fmt($left)
@@ -253,6 +259,10 @@ class IB_Combat {
                 'faction' => '', 'owner_player_id' => $p->id, 'team_id' => (int) $p->team_id, 'sector_id' => $p->sector_id,
                 'fighter_count' => $qty, 'fleet_mode' => $mode, 'created_at' => current_time('mysql'),
             ]);
+        }
+        if ($qty >= 100) {
+            IB_Log::news('combat', sprintf('%s %s garrisoned sector %d with %s %s fighters.',
+                IB_Game::rank_title($p->experience), $p->alias_name, $p->sector_id, IB_Game::fmt($qty), $mode));
         }
         return sprintf('Deployed %s %s fighters in sector %d.', IB_Game::fmt($qty), $mode, $p->sector_id);
     }
