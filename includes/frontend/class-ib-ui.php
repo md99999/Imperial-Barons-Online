@@ -11,7 +11,7 @@ class IB_UI {
      * then navigation, then your holdings, then the social pages.
      */
     const PAGES = [
-        'dashboard' => ['Imperial Barons - Home', 'imperial-barons-online', 'ib_dashboard', 'Home'],
+        'dashboard' => ['Imperial Barons', 'imperial-barons-online', 'ib_dashboard', 'Home'],
         'sector'    => ['Imperial Barons - Sector', 'imperial-barons-online-sector', 'ib_sector', 'Sector'],
         'port'      => ['Imperial Barons - Port', 'imperial-barons-online-port', 'ib_port', 'Port'],
         'map'       => ['Imperial Barons - Galaxy Map', 'imperial-barons-online-map', 'ib_map', 'Map'],
