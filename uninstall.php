@@ -10,7 +10,7 @@ $tables = ['players', 'sectors', 'warps', 'ports', 'planets', 'teams', 'messages
 foreach ($tables as $table) {
     $wpdb->query('DROP TABLE IF EXISTS ' . $wpdb->prefix . 'ib_' . $table);
 }
-foreach (['ib_settings', 'ib_db_version', 'ib_universe', 'ib_page_ids', 'ib_nav_post_id', 'ib_last_hourly', 'ib_last_daily'] as $option) {
+foreach (['ib_settings', 'ib_db_version', 'ib_universe', 'ib_page_ids', 'ib_nav_post_id', 'ib_last_hourly', 'ib_last_daily', 'ib_cron_log'] as $option) {
     delete_option($option);
 }
 wp_clear_scheduled_hook('ib_hourly_maintenance');

@@ -5,7 +5,7 @@ Plugin URI: https://maddogproductions.online/
 Author: Bill Mantz
 Author URI: https://maddogproductions.online/
 Description: Imperial Barons Online: a turn-based space trading and conquest game. Trade, colonize and fight your way up the ranks of the Imperium, played through WordPress pages using shortcodes.
-Version: 1.11.3
+Version: 1.12.0
 Requires PHP: 7.4
 Requires at least: 5.8
 Text Domain: imperial-barons-online
@@ -34,7 +34,7 @@ if (!defined('ABSPATH')) exit;
 define('IB_GAME_NAME', 'Imperial Barons Online');
 define('IB_GAZETTE_NAME', 'The Imperial Barons Gazette');
 define('IB_SOURCE_URL', 'https://github.com/md99999/Imperial-Barons-Online');
-define('IB_VERSION', '1.11.3');
+define('IB_VERSION', '1.12.0');
 define('IB_DB_VERSION', '4');
 define('IB_FILE', __FILE__);
 define('IB_PATH', plugin_dir_path(__FILE__));
@@ -66,8 +66,8 @@ add_action('plugins_loaded', ['IB_Installer', 'maybe_upgrade']);
 add_action('init', ['IB_Shortcodes', 'register']);
 add_action('template_redirect', ['IB_Actions', 'handle']);
 add_action('wp_enqueue_scripts', ['IB_UI', 'enqueue_assets']);
-add_action(IB_Maintenance::HOURLY_HOOK, ['IB_Maintenance', 'hourly']);
-add_action(IB_Maintenance::DAILY_HOOK, ['IB_Maintenance', 'daily']);
+add_action(IB_Maintenance::HOURLY_HOOK, ['IB_Maintenance', 'cron_hourly']);
+add_action(IB_Maintenance::DAILY_HOOK, ['IB_Maintenance', 'cron_daily']);
 
 if (is_admin()) {
     require_once IB_PATH . 'admin/class-ib-admin.php';

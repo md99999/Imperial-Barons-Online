@@ -17,4 +17,4 @@ All tables use the site's table prefix (shown here as `wp_`). The schema lives i
 Commodity columns keep short internal names: `ore` = Ferrium Ore, `organics` = Biostock, `equipment` = Machinery.
 
 Game settings are stored in the `ib_settings` option rather than a table.
-Other options: `ib_universe` (last Universe Forge summary), `ib_page_ids`, `ib_db_version`, `ib_last_hourly`, `ib_last_daily`.
+Other options: `ib_universe` (last Universe Forge summary), `ib_page_ids`, `ib_db_version`, `ib_last_hourly`, `ib_last_daily`, `ib_cron_log` (the Cron Maintenance Log: the last 10 days of scheduled-job runs, shown on the Maintenance page).

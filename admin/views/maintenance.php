@@ -39,6 +39,40 @@ $cmd = function ($command) {
 </table>
 <p class="description" style="max-width:860px">Turns also reset the first time a pilot visits on a new day, so play works even if cron is late.</p>
 
+<h2>Cron Maintenance Log</h2>
+<p class="description" style="max-width:860px">One line per job per day, for the last
+    <?php echo (int) IB_Maintenance::LOG_DAYS; ?> days. Every start is counted, including the ones that found the
+    work already done and stood down &mdash; those never replace the run that did it.</p>
+<?php $log = IB_Maintenance::cron_log(); ?>
+<table class="widefat striped" style="max-width:860px">
+    <thead><tr><th>Day</th><th>Job</th><th>Ran at</th><th>Started by</th><th>What it did</th><th>Starts</th></tr></thead>
+    <tbody>
+    <?php if (!$log) : ?>
+        <tr><td colspan="6">Nothing logged yet. The log fills as the jobs run.</td></tr>
+    <?php else : foreach ($log as $entry) :
+        $time = $entry['time'] ? mysql2date('H:i:s', $entry['time']) : '';
+        ?>
+        <tr>
+            <td><?php echo esc_html($entry['day']); ?></td>
+            <td><?php echo esc_html(ucfirst($entry['job'])); ?></td>
+            <td><?php echo esc_html($time); ?></td>
+            <td><?php echo esc_html(IB_Maintenance::source_label($entry)); ?></td>
+            <td>
+                <?php echo esc_html($entry['result']); ?>
+                <?php if ((int) $entry['runs'] > 1) : ?>
+                    <span class="description">(did the work <?php echo (int) $entry['runs']; ?> times that day)</span>
+                <?php endif; ?>
+            </td>
+            <td><?php echo (int) $entry['starts']; ?></td>
+        </tr>
+    <?php endforeach; endif; ?>
+    </tbody>
+</table>
+<p class="description" style="max-width:860px"><strong>Started by</strong> is WP-Cron, &ldquo;Run now by&rdquo; whoever
+    pressed the button on this page, or Server cron for the scripts in <code>maintenance/</code>. A 5-minute cron job
+    hitting <code>wp-cron.php</code> shows as WP-Cron, because that is what runs the job; the hourly count then shows how
+    often it looked in.</p>
+
 <div class="ib-box" style="max-width:860px">
     <h2>Set up a real cron job</h2>
     <p>WordPress's own scheduler (WP-Cron) only runs when someone visits the site, so on a quiet site ports can go

@@ -303,6 +303,13 @@ job should keep advancing. Running a maintenance script by hand in a terminal pr
 or *"skipped: it already ran…"* if the job already ran this period, or *"already running elsewhere"*
 if another run currently holds the lock.
 
+The same screen keeps a **Cron Maintenance Log**: one line per job per day for the last ten days,
+showing the time the job ran, what started it (WP-Cron, *Run now by* whoever pressed the button, or
+Server cron), what it did, and how many times it was started that day. Starts that found the work
+already done are counted but never replace the run that did it, so a busy 5-minute cron shows a high
+count beside the one run that mattered. The log is kept in the `ib_cron_log` option and is removed
+when the plugin is deleted.
+
 ### Updating and uninstalling
 
 - **Updating:** replace the plugin folder with the new version. Database changes are applied

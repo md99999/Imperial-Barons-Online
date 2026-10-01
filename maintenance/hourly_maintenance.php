@@ -5,4 +5,4 @@
  */
 if (PHP_SAPI !== 'cli') exit("CLI only.\n");
 require_once __DIR__ . '/bootstrap.php';
-echo IB_Maintenance::hourly() . "\n";
+echo IB_Maintenance::hourly(false, 'cli') . "\n";
