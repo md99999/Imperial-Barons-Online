@@ -277,13 +277,24 @@ class IB_Ports {
         IB_Player::spend_credits($p, $cost);
 
         $holds = max($new['base_holds'], min((int) $p->cargo_holds, $new['max_holds']));
-        $cargo = ['colonists' => (int) $p->colonists, 'ore' => (int) $p->ore, 'organics' => (int) $p->organics, 'equipment' => (int) $p->equipment];
-        $excess = array_sum($cargo) - $holds;
-        foreach ($cargo as $k => $v) {
+        // Anything that will not fit the new hull is left on the dock. Colonists are counted in
+        // berths, the same way holds_used() counts them, and are the last thing put ashore.
+        $cargo = [];
+        foreach (array_keys(IB_Game::COMMODITIES) as $k) $cargo[$k] = (int) $p->$k;
+        $cargo['colonists'] = (int) $p->colonists;
+        $used = function ($cargo) {
+            $n = IB_Player::colonist_holds($cargo['colonists']);
+            foreach (IB_Game::COMMODITIES as $k => $def) $n += $cargo[$k];
+            return $n;
+        };
+        foreach (array_keys(IB_Game::COMMODITIES) as $k) {
+            $excess = $used($cargo) - $holds;
             if ($excess <= 0) break;
-            $drop = min($v, $excess);
-            $cargo[$k] -= $drop;
-            $excess -= $drop;
+            $cargo[$k] -= min($cargo[$k], $excess);
+        }
+        if ($used($cargo) > $holds) {
+            $berths = max(0, $holds - ($used($cargo) - IB_Player::colonist_holds($cargo['colonists'])));
+            $cargo['colonists'] = min($cargo['colonists'], $berths * IB_Player::colonists_per_hold());
         }
         IB_Player::update($p, array_merge($cargo, [
             'ship_type' => $type, 'cargo_holds' => $holds,

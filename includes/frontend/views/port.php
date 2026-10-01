@@ -87,22 +87,25 @@ $class = (int) $port->port_class;
 
 <?php if ($class === IB_Ports::ARMORY) :
     $free_holds = IB_Player::holds_free($p);
+    $berths = IB_Player::colonist_room($p);
     $colonist_price = (int) IB_Settings::get('price_colonist'); ?>
 <div class="ib-panel">
     <h3>Colonist recruiting office</h3>
-    <p class="ib-small">Settlers bound for the frontier: <?php echo IB_Game::fmt($colonist_price); ?> credits each, one cargo hold apiece.
+    <p class="ib-small">Settlers bound for the frontier: <?php echo IB_Game::fmt($colonist_price); ?> credits each, travelling
+        <?php echo (int) IB_Player::colonists_per_hold(); ?> to a cargo hold.
         Carry them to a planet you own and they will produce goods and fighters every hour. You can also recruit them
         on Aurelia Prime itself, the Crown World in this sector.</p>
     <?php if (!$docked) : ?>
         <p class="ib-dim ib-small">Dock to recruit colonists.</p>
-    <?php elseif ($free_holds < 1) : ?>
+    <?php elseif ($berths < 1) : ?>
         <p class="ib-dim ib-small">Your holds are full.</p>
     <?php else : ?>
         <?php echo IB_UI::form_open('buy_colonists', 'ib-inline'); ?>
-            <input type="number" name="qty" min="1" max="<?php echo $free_holds; ?>" value="<?php echo $free_holds; ?>" class="ib-num" aria-label="Colonists">
+            <input type="number" name="qty" min="1" max="<?php echo (int) $berths; ?>" value="<?php echo (int) $berths; ?>" class="ib-num" aria-label="Colonists">
             <button type="submit" class="ib-btn">Take colonists aboard</button>
         </form>
-        <p class="ib-dim ib-small">You have <?php echo $free_holds; ?> empty holds and carry <?php echo IB_Game::fmt($p->colonists); ?> colonists.</p>
+        <p class="ib-dim ib-small">You have <?php echo $free_holds; ?> empty holds, berths for
+            <?php echo IB_Game::fmt($berths); ?> more settlers, and carry <?php echo IB_Game::fmt($p->colonists); ?> colonists.</p>
     <?php endif; ?>
 </div>
 <?php endif; ?>

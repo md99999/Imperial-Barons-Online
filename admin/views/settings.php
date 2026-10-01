@@ -27,6 +27,7 @@ $fields = [
         'price_hold_base' => ['Cargo hold base price', 'Each additional hold costs 5 credits more than the last.'],
         'price_worldseed' => ['Worldseed price', ''],
         'price_colonist' => ['Colonist price (Aurelia Prime)', ''],
+        'colonists_per_hold' => ['Colonists per cargo hold', 'Settlers travel in berths, so one hold carries this many.'],
         'price_survey_drone' => ['Survey drone price', 'Charts every sector within 3 warps of where it is launched.'],
         'price_nebula_chart' => ['Nebula chart price', 'Charts every sector in one nebula.'],
     ],

@@ -350,7 +350,12 @@ when the plugin is deleted.
   two neighbouring ports with opposite classes (for example SBB and BSS) for a profitable run in
   both directions.
 - **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities and
-  fighters every hour. Bastions (levels 1–6) add a vault, stronger defenses and a Lance Battery.
+  fighters every hour, at the rate their planet class quotes per 1,000 colonists a day, and a colony
+  grows 5% a day by itself up to the planet's capacity. Settlers travel in berths rather than one to a
+  hold — 50 to a hold by default, so a 75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 —
+  which is what makes founding a colony a trip or two rather than a fortnight of shuttling. Set
+  **Colonists per cargo hold** in Settings to tune it. Bastions (levels 1–6) add a vault, stronger
+  defenses and a Lance Battery.
 - **Danger.** The Imperial Core (sectors 1–10) is protected by the Crown's Peace. Beyond it roam the
   Vraxori Syndicate, Gorvath Clans, Reaver Pirates, Myrrak Swarm, Thaloruun Dominion and Zephryl
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new

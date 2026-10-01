@@ -148,7 +148,7 @@ class IB_Planets {
         if ($dir === 'take') {
             $room = $what === 'fighters'
                 ? IB_Player::ship($p)['max_fighters'] - $p->fighters
-                : IB_Player::holds_free($p);
+                : ($what === 'colonists' ? IB_Player::colonist_room($p) : IB_Player::holds_free($p));
             if ($qty > $room) throw new IB_Game_Exception(sprintf('Your ship only has room for %s more.', IB_Game::fmt(max(0, $room))));
             $ok = $wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what - %d WHERE id = %d AND $what >= %d", $qty, $planet->id, $qty));
             if (!$ok) throw new IB_Game_Exception('The planet does not have that many.');
@@ -233,11 +233,16 @@ class IB_Planets {
         }
         $qty = (int) $qty;
         if ($qty <= 0) throw new IB_Game_Exception('Enter a quantity greater than zero.');
-        if ($qty > IB_Player::holds_free($p)) throw new IB_Game_Exception(sprintf('You only have %d empty holds.', IB_Player::holds_free($p)));
+        $room = IB_Player::colonist_room($p);
+        if ($qty > $room) {
+            throw new IB_Game_Exception(sprintf('Your ship has berths for %s more colonists (%d empty holds at %d apiece).',
+                IB_Game::fmt($room), IB_Player::holds_free($p), IB_Player::colonists_per_hold()));
+        }
         $cost = $qty * (int) IB_Settings::get('price_colonist');
         IB_Player::spend_credits($p, $cost);
         IB_Player::add($p, ['colonists' => $qty]);
-        return sprintf('%s colonists board your ship (%s credits in transport fees).', IB_Game::fmt($qty), IB_Game::fmt($cost));
+        return sprintf('%s colonists board your ship, filling %d holds (%s credits in transport fees).',
+            IB_Game::fmt($qty), IB_Player::colonist_holds($p->colonists), IB_Game::fmt($cost));
     }
 
     public static function launch_worldseed($p, $name) {
@@ -283,14 +288,14 @@ class IB_Planets {
         return count($planets);
     }
 
-    /** Daily: colonies grow 2% up to the planet's capacity. */
+    /** Daily: colonies grow 5% up to the planet's capacity. */
     public static function grow() {
         global $wpdb;
         $t = IB_DB::t('planets');
         foreach (self::CLASSES as $class => $def) {
             if (!$def['max_colonists']) continue;
             $wpdb->query($wpdb->prepare(
-                "UPDATE $t SET colonists = LEAST(%d, colonists + CEIL(colonists * 0.02)) WHERE planet_class = %s AND colonists > 0",
+                "UPDATE $t SET colonists = LEAST(%d, colonists + CEIL(colonists * 0.05)) WHERE planet_class = %s AND colonists > 0",
                 $def['max_colonists'], $class
             ));
         }

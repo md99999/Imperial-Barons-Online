@@ -50,6 +50,7 @@ class IB_Settings {
             'price_hold_base'      => 200,
             'price_worldseed'        => 20000,
             'price_colonist'       => 5,
+            'colonists_per_hold'   => 50,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,

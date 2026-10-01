@@ -12,6 +12,10 @@ $cargo['colonists'] = 'Colonists';
         <p class="ib-dim"><?php echo esc_html($ship['name']); ?> &middot; <?php echo esc_html($ship['desc']); ?></p>
         <table class="ib-table ib-kv">
             <tr><th>Cargo holds</th><td><?php echo (int) $p->cargo_holds; ?> of <?php echo (int) $ship['max_holds']; ?> max (<?php echo IB_Player::holds_free($p); ?> empty)</td></tr>
+            <?php $col_holds = (int) IB_Player::colonist_holds($p->colonists); ?>
+            <tr><th>Colonist berths</th><td><?php echo (int) IB_Player::colonists_per_hold(); ?> per hold &middot;
+                carrying <?php echo IB_Game::fmt($p->colonists); ?> in <?php echo $col_holds; ?> hold<?php echo $col_holds === 1 ? '' : 's'; ?>,
+                room for <?php echo IB_Game::fmt(IB_Player::colonist_room($p)); ?> more</td></tr>
             <tr><th>Fighters</th><td><?php echo IB_Game::fmt($p->fighters); ?> of <?php echo IB_Game::fmt($ship['max_fighters']); ?></td></tr>
             <tr><th>Shields</th><td><?php echo IB_Game::fmt($p->shield_points); ?> of <?php echo IB_Game::fmt($ship['max_shields']); ?></td></tr>
             <tr><th>Combat odds</th><td>Offense <?php echo esc_html($ship['off']); ?> &middot; Defense <?php echo esc_html($ship['def']); ?></td></tr>

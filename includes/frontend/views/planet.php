@@ -61,11 +61,14 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
     <div class="ib-panel">
         <h2>Aurelia Prime, the Crown World</h2>
         <p>The cradle of humanity. Colonists crowd the spaceport, eager for a new life on the frontier.</p>
-        <p>Colonists cost <?php echo (int) IB_Settings::get('price_colonist'); ?> credits each and take one hold apiece.
-            You have <?php echo IB_Player::holds_free($p); ?> empty holds.</p>
-        <?php if (IB_Player::holds_free($p) > 0) : ?>
+        <?php $berths = IB_Player::colonist_room($p); ?>
+        <p>Colonists cost <?php echo (int) IB_Settings::get('price_colonist'); ?> credits each and travel in berths,
+            <?php echo (int) IB_Player::colonists_per_hold(); ?> to a cargo hold.
+            You have <?php echo IB_Player::holds_free($p); ?> empty holds: berths for
+            <?php echo IB_Game::fmt($berths); ?> settlers.</p>
+        <?php if ($berths > 0) : ?>
             <?php echo IB_UI::form_open('buy_colonists', 'ib-inline'); ?>
-                <input type="number" name="qty" min="1" max="<?php echo IB_Player::holds_free($p); ?>" value="<?php echo IB_Player::holds_free($p); ?>" class="ib-num" aria-label="Colonists">
+                <input type="number" name="qty" min="1" max="<?php echo (int) $berths; ?>" value="<?php echo (int) $berths; ?>" class="ib-num" aria-label="Colonists">
                 <button type="submit" class="ib-btn">Take colonists aboard</button>
             </form>
         <?php endif; ?>
@@ -85,6 +88,13 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
             <tr><th>Bastion</th><td><?php echo $level ? 'Level ' . $level . ' - ' . esc_html(IB_Planets::BASTION[$level]['name']) : 'None'; ?></td></tr>
             <?php if ($friendly && $level) : ?><tr><th>Vault</th><td><?php echo IB_Game::fmt($planet->bastion_vault); ?> cr</td></tr><?php endif; ?>
             <tr><th>Daily output per 1,000 colonists</th><td><?php echo (int) $def['ore']; ?> ferrium ore, <?php echo (int) $def['organics']; ?> biostock, <?php echo (int) $def['equipment']; ?> machinery, <?php echo (int) $def['fighters']; ?> fighters</td></tr>
+            <?php if ((int) $planet->colonists > 0) :
+                $share = $planet->colonists / 1000; ?>
+                <tr><th>At this colony's size</th><td><?php printf('%s ferrium ore, %s biostock, %s machinery, %s fighters a day',
+                    IB_Game::fmt(round($def['ore'] * $share, 1)), IB_Game::fmt(round($def['organics'] * $share, 1)),
+                    IB_Game::fmt(round($def['equipment'] * $share, 1)), IB_Game::fmt(round($def['fighters'] * $share, 1))); ?>
+                    <span class="ib-dim">(the colony also grows 5% a day on its own)</span></td></tr>
+            <?php endif; ?>
         </table>
 
         <?php if (!$friendly) : ?>
@@ -102,7 +112,12 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
         <table class="ib-table">
             <thead><tr><th>Item</th><th>Planet</th><th>Ship</th><th>Take</th><th>Leave</th></tr></thead>
             <tbody>
-            <?php foreach (IB_Planets::TRANSFERABLE as $what) : ?>
+            <?php foreach (IB_Planets::TRANSFERABLE as $what) :
+                // Offer what will actually fit, so the first click is not an error message.
+                $room = $what === 'fighters'
+                    ? max(0, (int) IB_Player::ship($p)['max_fighters'] - (int) $p->fighters)
+                    : ($what === 'colonists' ? IB_Player::colonist_room($p) : IB_Player::holds_free($p));
+                $take = max(1, min((int) $planet->$what, $room)); ?>
                 <tr>
                     <td><?php echo esc_html(IB_Game::label($what)); ?></td>
                     <td><?php echo IB_Game::fmt($planet->$what); ?></td>
@@ -111,7 +126,7 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                         <?php echo IB_UI::form_open('planet_transfer', 'ib-inline'); ?>
                             <input type="hidden" name="what" value="<?php echo esc_attr($what); ?>">
                             <input type="hidden" name="dir" value="take">
-                            <input type="number" name="qty" min="1" value="<?php echo (int) $planet->$what; ?>" class="ib-num" aria-label="Take <?php echo esc_attr($what); ?>">
+                            <input type="number" name="qty" min="1" value="<?php echo (int) $take; ?>" class="ib-num" aria-label="Take <?php echo esc_attr($what); ?>">
                             <button type="submit" class="ib-btn ib-btn-small">Take</button>
                         </form>
                     </td>

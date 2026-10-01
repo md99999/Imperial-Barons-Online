@@ -310,8 +310,25 @@ class IB_Player {
         return IB_Ships::get($p->ship_type);
     }
 
+    /** Settlers travel in berths, so one cargo hold carries a group of them, not one person. */
+    public static function colonists_per_hold() {
+        return max(1, (int) IB_Settings::get('colonists_per_hold'));
+    }
+
+    /** The holds a given number of colonists occupies; a part-filled hold still counts as one. */
+    public static function colonist_holds($colonists) {
+        return (int) ceil(max(0, (int) $colonists) / self::colonists_per_hold());
+    }
+
+    /** How many more colonists will fit: the empty holds, plus any space left in a part-filled one. */
+    public static function colonist_room($p) {
+        $aboard = (int) $p->colonists;
+        $slack = self::colonist_holds($aboard) * self::colonists_per_hold() - $aboard;
+        return self::holds_free($p) * self::colonists_per_hold() + $slack;
+    }
+
     public static function holds_used($p) {
-        $used = (int) $p->colonists;
+        $used = self::colonist_holds($p->colonists);
         foreach (array_keys(IB_Game::COMMODITIES) as $key) $used += (int) $p->$key;
         return $used;
     }
