@@ -54,6 +54,16 @@ flawless: it is what to check, and where a mistake would most likely be.
 - **Turn, credit and stock changes are atomic** single UPDATE statements with the guard in the
   WHERE clause, so a double-submitted form cannot spend the same turn or credits twice.
 
+## If you deploy from a git clone
+
+The plugin is installed as a folder of files, so whatever is in that folder sits under your web
+root. A clone of the repository carries a `.git` directory holding the whole project history; the
+released zip does not. The plugin ships an `.htaccess` that refuses `.git`, `*.sql`, `*.md`, logs
+and editor leftovers, and an `index.php` in every directory so nothing can be listed, but
+`.htaccess` is Apache-only and nginx needs the rules in the README. The safe course is not to put
+`.git` on the server at all: install the released zip, or build one with `git archive`, as
+[Building a release zip](README.md#building-a-release-zip) describes.
+
 ## In scope
 
 Anything in this plugin's own code, for example:

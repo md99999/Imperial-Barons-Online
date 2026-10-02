@@ -101,7 +101,9 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
 
 1. **Install the plugin.** Copy the `imperial-barons-online` folder into your site's
    `wp-content/plugins/` directory, or zip the folder and upload it under
-   **Plugins → Add New → Upload Plugin**.
+   **Plugins → Add New → Upload Plugin**. Installing straight from a clone of this repository
+   works too, but read [Installing from the repository](#installing-from-the-repository) first:
+   a clone carries a `.git` directory that does not belong on a web server.
 2. **Activate it.** In **Plugins**, activate **Imperial Barons Online**. Activation creates the
    game's database tables (`wp_ib_*`) and schedules the hourly and daily maintenance jobs.
 3. **Forge the universe.** Go to **Imperial Barons Online → Universe Management**. Review the
@@ -310,6 +312,59 @@ already done are counted but never replace the run that did it, so a busy 5-minu
 count beside the one run that mattered. The log is kept in the `ib_cron_log` option and is removed
 when the plugin is deleted.
 
+### Installing from the repository
+
+The released zip and the repository hold the same plugin, so a clone or a GitHub **Download ZIP**
+runs the game perfectly well. Two things are worth knowing before you put one on a live site.
+
+**The folder gets a different name.** GitHub's zip unpacks as `Imperial-Barons-Online-main`, and
+WordPress installs the plugin under that name. Nothing in the game depends on the folder name, so it
+works — but WordPress treats `Imperial-Barons-Online-main/imperial-barons-online.php` and
+`imperial-barons-online/imperial-barons-online.php` as two different plugins, and installing the
+other one later gives you two copies, two sets of scheduled jobs and one shared set of tables.
+Rename the folder to `imperial-barons-online` before you activate it, and stay with that name.
+
+**A clone carries files a web server should not serve.** Chiefly `.git`, which holds the project's
+entire history: on a public site anyone who knows the path can walk it. The plugin ships an
+`.htaccess` that refuses `.git`, `*.sql`, `*.md`, logs and editor leftovers, and every directory has
+an `index.php` so nothing can be listed — but `.htaccess` is read by Apache only. On nginx, put this
+in the server block:
+
+```nginx
+location ~ /wp-content/plugins/.*/\.(git|svn)(/|$) { deny all; }
+location ~ /wp-content/plugins/.*\.(sql|md|log|ya?ml|lock)$ { deny all; }
+```
+
+The surest fix is not to deploy `.git` at all: build a zip from the repository as below, or run
+`git archive` straight onto the server. Nothing else in the tree is sensitive — the PHP files all
+refuse to run unless WordPress loaded them, the scripts in `maintenance/` refuse to run over the web
+at all, and `sql/install.sql` is the table schema, which is in this README anyway.
+
+### Building a release zip
+
+There is no build step: no compiler, no bundler, no dependencies to install. The plugin is the
+source. To produce the same zip that is published for a release, from a clone of the repository:
+
+```bash
+git archive --format=zip --prefix=imperial-barons-online/ -o imperial-barons-online.zip HEAD
+```
+
+That gives a zip whose single top-level folder is `imperial-barons-online`, which is what
+**Plugins → Add New → Upload Plugin** expects. It takes the files from the last commit, not the
+working tree, so uncommitted edits are left out, and `.gitattributes` keeps development-only files
+(`.gitignore`, `.gitattributes`, `.github`) out of the archive. On Windows, the same command works in
+Git Bash or PowerShell wherever `git` is on the path.
+
+To build from the working tree instead — handy while testing — zip the folder itself, leaving out
+the repository metadata:
+
+```bash
+cd .. && zip -r imperial-barons-online.zip imperial-barons-online -x '*/.git/*'
+```
+
+Whichever you use, the zip should contain one top-level folder named `imperial-barons-online` with
+`imperial-barons-online.php` directly inside it, and no `.git` directory.
+
 ### Updating and uninstalling
 
 - **Updating:** replace the plugin folder with the new version. Database changes are applied
@@ -411,6 +466,8 @@ with no warranty.
 ```
 imperial-barons-online.php    plugin bootstrap and hooks
 uninstall.php                 removes tables and options when the plugin is deleted
+.htaccess                     Apache: refuses .git, the schema, docs and logs over the web
+index.php                     one per directory, so nothing can be listed or opened directly
 SECURITY.md                   how to report a vulnerability, and what is in scope
 sql/install.sql               database schema (applied with dbDelta and the site's table prefix)
 includes/class-ib-core.php    settings, table names, logging, ranks
