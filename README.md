@@ -343,7 +343,11 @@ at all, and `sql/install.sql` is the table schema, which is in this README anywa
 ### Building a release zip
 
 There is no build step: no compiler, no bundler, no dependencies to install. The plugin is the
-source. To produce the same zip that is published for a release, from a clone of the repository:
+source, and there are three ways to package it.
+
+#### Building it with git
+
+To produce the same zip that is published for a release, from a clone of the repository:
 
 ```bash
 git archive --format=zip --prefix=imperial-barons-online/ -o imperial-barons-online.zip HEAD
@@ -355,8 +359,34 @@ working tree, so uncommitted edits are left out, and `.gitattributes` keeps deve
 (`.gitignore`, `.gitattributes`, `.github`) out of the archive. On Windows, the same command works in
 Git Bash or PowerShell wherever `git` is on the path.
 
-To build from the working tree instead — handy while testing — zip the folder itself, leaving out
-the repository metadata:
+#### Building it with PHP, without git
+
+If git is not installed, or you are on Windows without a `zip` command, `tools/build-zip.php` does
+the same job with nothing but PHP:
+
+```bash
+php tools/build-zip.php
+```
+
+That writes `imperial-barons-online-<version>.zip` next to the plugin folder, taking the version
+from the plugin header, and prints the path, the file count and the size. Pass a path to put it
+somewhere else:
+
+```bash
+php tools/build-zip.php /path/to/imperial-barons-online.zip
+```
+
+It needs PHP's `zip` extension, which is standard on hosting but is sometimes switched off in a
+command-line PHP on Windows; the script says so plainly and stops if it is missing. It packs the
+**working tree**, uncommitted edits included, which is the difference from `git archive` — useful
+while testing a change, and worth remembering when cutting a release. It skips `.git`, `.github`,
+`.gitignore`, `.gitattributes`, `tools/`, `node_modules`, `vendor`, editor leftovers and any zips
+or logs lying about, and it produces the same file list as the `git archive` command above.
+
+The script refuses to run over the web, as do the maintenance scripts, and `tools/` is left out of
+both builds, so it never reaches an installed site.
+
+#### Zipping the folder by hand
 
 ```bash
 cd .. && zip -r imperial-barons-online.zip imperial-barons-online -x '*/.git/*'
@@ -478,5 +508,6 @@ includes/frontend/            shortcodes, form action dispatcher, UI helpers, pa
 admin/                        wp-admin screens
 assets/                       stylesheet and JavaScript (confirmations, galaxy map pan and zoom)
 maintenance/                  optional CLI scripts for a system cron
+tools/build-zip.php           builds an installable zip with PHP alone (not shipped in releases)
 docs/                         admin, database, page and Universe Forge reference
 ```
