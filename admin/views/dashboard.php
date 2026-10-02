@@ -25,6 +25,24 @@ $locations = get_registered_nav_menus();
     <p>Universe generated <?php echo esc_html($universe['generated_at']); ?> &middot; Drydock in sector <?php echo (int) $universe['drydock']; ?> &middot; seed <?php echo (int) $universe['seed']; ?></p>
 <?php endif; ?>
 
+<?php $ib_issues = IB_Health::issues(); ?>
+<div class="ib-box" style="max-width:860px<?php echo $ib_issues ? ';border-left:4px solid #d63638' : ''; ?>">
+    <h2 style="margin-top:0">Install health</h2>
+    <p class="description">How this copy of the plugin was installed, and whether that will cause trouble later.
+        Installed from <code><?php echo esc_html(IB_Health::folder()); ?></code>.</p>
+    <?php if (!$ib_issues) : ?>
+        <p class="ib-ok"><strong>Nothing to report.</strong> The plugin is in the folder updates expect, there is only
+            one copy of it, and no repository metadata is sitting in your web root.</p>
+    <?php else : foreach ($ib_issues as $issue) : ?>
+        <h3 class="<?php echo $issue['level'] === 'error' ? 'ib-error' : 'ib-warning'; ?>" style="margin-bottom:4px">
+            <?php echo esc_html($issue['title']); ?>
+        </h3>
+        <?php echo $issue['body']; ?>
+    <?php endforeach; endif; ?>
+    <p class="description">Building an installable zip from the repository is covered in the plugin's
+        <code>README.md</code>, under <em>Building a release zip</em>.</p>
+</div>
+
 <div class="ib-box" style="border-left:4px solid #996800;max-width:860px">
     <h2 style="margin-top:0">Disclaimer</h2>
     <p><strong>You run this plugin at your own risk. The author accepts no responsibility or liability for any loss,

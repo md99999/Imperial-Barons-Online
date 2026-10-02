@@ -5,7 +5,7 @@ Plugin URI: https://maddogproductions.online/
 Author: Bill Mantz
 Author URI: https://maddogproductions.online/
 Description: Imperial Barons Online: a turn-based space trading and conquest game. Trade, colonize and fight your way up the ranks of the Imperium, played through WordPress pages using shortcodes.
-Version: 1.13.2
+Version: 1.14.0
 Requires PHP: 7.4
 Requires at least: 5.8
 Text Domain: imperial-barons-online
@@ -34,7 +34,7 @@ if (!defined('ABSPATH')) exit;
 define('IB_GAME_NAME', 'Imperial Barons Online');
 define('IB_GAZETTE_NAME', 'The Imperial Barons Gazette');
 define('IB_SOURCE_URL', 'https://github.com/md99999/Imperial-Barons-Online');
-define('IB_VERSION', '1.13.2');
+define('IB_VERSION', '1.14.0');
 define('IB_DB_VERSION', '4');
 define('IB_FILE', __FILE__);
 define('IB_PATH', plugin_dir_path(__FILE__));
@@ -42,6 +42,7 @@ define('IB_URL', plugin_dir_url(__FILE__));
 
 require_once IB_PATH . 'includes/class-ib-core.php';
 require_once IB_PATH . 'includes/class-ib-installer.php';
+require_once IB_PATH . 'includes/class-ib-health.php';
 require_once IB_PATH . 'includes/data/class-ib-ships.php';
 require_once IB_PATH . 'includes/services/class-factions.php';
 require_once IB_PATH . 'includes/services/class-pathfinder.php';

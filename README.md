@@ -325,7 +325,9 @@ other one later gives you two copies, two sets of scheduled jobs and one shared 
 Rename the folder to `imperial-barons-online` before you activate it, and stay with that name.
 
 **A clone carries files a web server should not serve.** Chiefly `.git`, which holds the project's
-entire history: on a public site anyone who knows the path can walk it. The plugin ships an
+entire history: on a public site anyone who knows the path can walk it. (GitHub's **Download ZIP**
+is an export rather than a clone, so it has no `.git` in it; this applies to a working copy you
+cloned or copied from your own machine.) The plugin ships an
 `.htaccess` that refuses `.git`, `*.sql`, `*.md`, logs and editor leftovers, and every directory has
 an `index.php` so nothing can be listed — but `.htaccess` is read by Apache only. On nginx, put this
 in the server block:
@@ -336,7 +338,10 @@ location ~ /wp-content/plugins/.*\.(sql|md|log|ya?ml|lock)$ { deny all; }
 ```
 
 The surest fix is not to deploy `.git` at all: build a zip from the repository as below, or run
-`git archive` straight onto the server. Nothing else in the tree is sensitive — the PHP files all
+`git archive` straight onto the server. The plugin also checks itself: **Imperial Barons Online →
+Dashboard** has an *Install health* panel, and an administrator sees a notice on the Plugins screen,
+if the folder is misnamed, if a `.git` directory is present (it tests whether your server actually
+serves it), or if a second copy of the plugin is installed. Nothing else in the tree is sensitive — the PHP files all
 refuse to run unless WordPress loaded them, the scripts in `maintenance/` refuse to run over the web
 at all, and `sql/install.sql` is the table schema, which is in this README anyway.
 
@@ -501,6 +506,7 @@ index.php                     one per directory, so nothing can be listed or ope
 SECURITY.md                   how to report a vulnerability, and what is in scope
 sql/install.sql               database schema (applied with dbDelta and the site's table prefix)
 includes/class-ib-core.php    settings, table names, logging, ranks
+includes/class-ib-health.php  warns if the install came from a clone or a branch-named zip
 includes/data/                ship catalogue
 includes/services/            game rules: players, ports, planets, combat, discovery, teams,
                               messages, Universe Forge, pathfinder, factions, maintenance

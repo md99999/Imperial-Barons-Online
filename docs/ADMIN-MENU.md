@@ -1,5 +1,5 @@
 Imperial Barons Online (wp-admin menu, requires `manage_options`)
-- Dashboard: universe stats, page status, **Create pages & menu**
+- Dashboard: universe stats, page status, install health (folder name, duplicate copies, a stray `.git`), **Create pages & menu**
 - Universe Management: current universe summary, Validate, Export (JSON), Universe Forge, Reset
 - Settings: turns per day, turn costs, starting ship, prices, port regeneration, Imperial Core size
 - Players: edit sector, turns, credits and fighters; delete a pilot
