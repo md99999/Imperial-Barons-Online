@@ -266,8 +266,8 @@ class IB_Planets {
     }
 
     /**
-     * How much a planet makes against the base rates: the site's Planet output setting (200% by
-     * default, so colonists are twice as productive as the class tables alone suggest), and a
+     * How much a planet makes against the base rates: the site's Planet output setting (300% by
+     * default, so colonists are three times as productive as the class tables alone suggest), and a
      * further 10% for each level of bastion, which gives fortifying a world a return beyond
      * defending it.
      */

@@ -28,7 +28,7 @@ $fields = [
         'price_worldseed' => ['Worldseed price', ''],
         'price_colonist' => ['Colonist price (Aurelia Prime)', ''],
         'colonists_per_hold' => ['Colonists per cargo hold', 'Settlers travel in berths, so one hold carries this many.'],
-        'planet_output_percent' => ['Planet output (%)', 'Scales every planet class\'s daily production. 100 is the base rate; each bastion level adds a further 10%.'],
+        'planet_output_percent' => ['Planet output (%)', 'Scales every planet class\'s daily production, in units of cargo. 100 is the base rate, 300 the default; each bastion level adds a further 10%.'],
         'price_survey_drone' => ['Survey drone price', 'Charts every sector within 3 warps of where it is launched.'],
         'price_nebula_chart' => ['Nebula chart price', 'Charts every sector in one nebula.'],
     ],

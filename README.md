@@ -457,10 +457,12 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   for a profitable run in both directions.
 - **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities and
   fighters every hour, and a colony grows 5% a day by itself up to the planet's capacity. Output is
-  quoted per 1,000 colonists a day and scaled by the **Planet output** setting, 200% by default, with
+  quoted per 1,000 colonists a day and scaled by the **Planet output** setting, 300% by default, with
   a further 10% for every bastion level — so a fortified world repays the building, not just the
-  defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 60/100/40 + 20
-  at the default, and 96/160/64 + 32 behind a level 6 Sovereign Spire. The Planet page shows the rate
+  defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 90/150/60 + 30
+  at the default, and 144/240/96 + 48 behind a level 6 Sovereign Spire. A colony of a thousand
+  settlers makes 300 units of cargo a day, four loads for a 75-hold Freetrader, and planet stock has
+  no ceiling, so what you cannot carry today keeps until you come back. The Planet page shows the rate
   for the world you are standing on, what it yields at its current size, and the base rate behind it. Settlers travel in berths rather than one to a
   hold — 50 to a hold by default, so a 75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 —
   which is what makes founding a colony a trip or two rather than a fortnight of shuttling. Set

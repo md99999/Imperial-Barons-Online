@@ -51,7 +51,7 @@ class IB_Settings {
             'price_worldseed'        => 20000,
             'price_colonist'       => 5,
             'colonists_per_hold'   => 50,
-            'planet_output_percent' => 200,
+            'planet_output_percent' => 300,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,
