@@ -1,4 +1,4 @@
-All tables use the site's table prefix (shown here as `wp_`). The schema lives in `sql/install.sql`.
+All tables use the site's table prefix (shown here as `wp_`). The schema lives in `sql/install-schema.php`, which is a PHP file so that no web server will serve it.
 
 | Table | Contents |
 |---|---|

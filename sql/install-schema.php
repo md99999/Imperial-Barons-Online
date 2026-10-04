@@ -1,3 +1,16 @@
+<?php
+/**
+ * The database schema, applied with dbDelta(). {prefix} and {charset_collate} are filled in
+ * by IB_Installer::install_schema().
+ *
+ * It lives in a PHP file rather than a .sql one so that no web server will serve it: a plugin
+ * folder is inside the web root, and a .sql file there is readable by anyone unless the server
+ * is configured to refuse it. PHP files in this plugin all stop dead unless WordPress loaded
+ * them, which needs no server configuration at all.
+ */
+if (!defined('ABSPATH')) exit;
+
+return <<<'SQL'
 CREATE TABLE {prefix}ib_players (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   user_id bigint(20) unsigned NOT NULL DEFAULT 0,
@@ -147,3 +160,4 @@ CREATE TABLE {prefix}ib_admin_log (
   created_at datetime DEFAULT NULL,
   PRIMARY KEY  (id)
 ) {charset_collate};
+SQL;

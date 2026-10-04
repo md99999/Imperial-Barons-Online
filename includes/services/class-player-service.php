@@ -74,11 +74,13 @@ class IB_Player {
             throw new IB_Game_Exception('That alias is already taken.');
         }
         if ($ship_name === '') $ship_name = $alias . "'s Ship";
-        $user = get_userdata($user_id);
         $s = IB_Settings::all();
+        // The WordPress display name is deliberately not copied here. Other players only ever see
+        // the alias, so the game has no use for it, and the less of it the game table holds the
+        // less there is to leak. The real_name column stays for sites upgrading from older
+        // versions; nothing reads it.
         $wpdb->insert(IB_DB::t('players'), [
             'user_id' => $user_id, 'alias_name' => $alias,
-            'real_name' => $user ? substr($user->display_name, 0, 41) : '',
             'ship_name' => substr($ship_name, 0, 41), 'ship_type' => IB_Ships::DEFAULT_TYPE,
             'sector_id' => 1, 'fighters' => $s['starting_fighters'], 'shield_points' => $s['starting_shields'],
             'cargo_holds' => $s['starting_holds'], 'credits' => $s['starting_credits'],

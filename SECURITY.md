@@ -45,6 +45,11 @@ flawless: it is what to check, and where a mistake would most likely be.
   and message text is escaped before `nl2br()`. Nothing from the database is echoed raw.
 - **No file paths come from user input.** The only dynamic `include` statements use keys from a
   fixed list of pages, so directory traversal has nothing to act on.
+- **Nothing in the plugin folder is served.** Every PHP file stops dead unless WordPress loaded it,
+  the command-line scripts refuse anything but CLI, each directory holds an `index.php` so nothing
+  can be listed, and the database schema lives in a PHP file rather than a `.sql` one so that a
+  server with no rules for it cannot hand it out. The bundled `.htaccess` adds the same refusals on
+  Apache for anything else that ends up in the folder, such as a `.git` directory from a clone.
 - **No shell, `eval()`, `unserialize()` or dynamic code execution** anywhere in the plugin.
 - **Ownership and capability are checked on the action, not the page.** Landing, cargo transfers,
   recalling fighters and reading mail all verify that the pilot owns the thing; admin functions
@@ -63,6 +68,23 @@ and editor leftovers, and an `index.php` in every directory so nothing can be li
 `.htaccess` is Apache-only and nginx needs the rules in the README. The safe course is not to put
 `.git` on the server at all: install the released zip, or build one with `git archive`, as
 [Building a release zip](README.md#building-a-release-zip) describes.
+
+## What has been tested
+
+The input handling above is not just a description of intent: the plugin is probed against it.
+The current release was checked by pushing cross-site-scripting, SQL injection, path traversal,
+null-byte and template-injection payloads through every stored text field (pilot alias, ship name,
+planet name, team name, message subject and body) and every query parameter the game reads, then
+rendering each page that displays them and confirming nothing came back executable and every table
+was still standing. Alongside that: forged POSTs with no nonce, a junk nonce and a nonce minted for
+another action, each confirmed to change nothing while the same request with a valid nonce
+succeeded; attacks on another pilot across sector boundaries, recalls of someone else's fighters,
+deletions of someone else's mail, negative and overflowing quantities, commodity names aimed at
+database columns, and spending credits and turns that do not exist — all refused. Finally, the
+plugin's own files were requested over HTTP to confirm that none of them return anything.
+
+This is a hobby project, not an audited product, and a clean run of these checks is evidence rather
+than proof. Please still report anything you find.
 
 ## In scope
 

@@ -56,7 +56,10 @@ class IB_Admin {
 
     public static function render() {
         if (!current_user_can(self::CAP)) wp_die('Not allowed.');
-        $page = isset($_GET['page']) ? sanitize_key($_GET['page']) : 'ib_dashboard';
+        // is_scalar first: sanitize_key() throws a TypeError on an array, and ?page[]=x is
+        // the sort of thing a scanner tries. Everything else here reads a posted field through
+        // post(), which already discards non-scalars.
+        $page = isset($_GET['page']) && is_scalar($_GET['page']) ? sanitize_key($_GET['page']) : 'ib_dashboard';
         $view = isset(self::SCREENS[$page]) ? self::SCREENS[$page][1] : 'dashboard';
         echo '<div class="wrap ib-admin"><h1>Imperial Barons Online &mdash; ' . esc_html(self::SCREENS[$page][0] ?? 'Dashboard') . '</h1>';
         self::render_notices();

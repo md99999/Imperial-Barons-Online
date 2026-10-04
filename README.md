@@ -343,7 +343,7 @@ Dashboard** has an *Install health* panel, and an administrator sees a notice on
 if the folder is misnamed, if a `.git` directory is present (it tests whether your server actually
 serves it), or if a second copy of the plugin is installed. Nothing else in the tree is sensitive — the PHP files all
 refuse to run unless WordPress loaded them, the scripts in `maintenance/` refuse to run over the web
-at all, and `sql/install.sql` is the table schema, which is in this README anyway.
+at all, and the table schema lives in a PHP file for the same reason, so it cannot be fetched either.
 
 ### Building a release zip
 
@@ -535,7 +535,7 @@ uninstall.php                 removes tables and options when the plugin is dele
 .htaccess                     Apache: refuses .git, the schema, docs and logs over the web
 index.php                     one per directory, so nothing can be listed or opened directly
 SECURITY.md                   how to report a vulnerability, and what is in scope
-sql/install.sql               database schema (applied with dbDelta and the site's table prefix)
+sql/install-schema.php        database schema (applied with dbDelta and the site's table prefix)
 includes/class-ib-core.php    settings, table names, logging, ranks
 includes/class-ib-health.php  warns if the install came from a clone or a branch-named zip
 includes/data/                ship catalogue
