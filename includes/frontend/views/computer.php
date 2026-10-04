@@ -140,7 +140,10 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
         </table>
         </div>
         <p class="ib-small ib-dim">Prices shown are what the port currently charges or pays per unit.
-        A sector number you can reach flies you there and docks; <em>plot</em> shows the course first.</p>
+        A sector number you can reach flies you there and docks; <em>plot</em> shows the course first.
+        A <span class="ib-spec-chip ib-sell">&#9670;I</span>, <span class="ib-spec-chip ib-sell">&#9670;M</span> or
+        <span class="ib-spec-chip ib-sell">&#9670;L</span> on the class code marks a port dealing in Rare Isotopes,
+        Medicine or Luxuries.</p>
     <?php endif; ?>
 </div>
 

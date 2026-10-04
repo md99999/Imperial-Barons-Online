@@ -258,14 +258,39 @@ class IB_UI {
         return '<span class="' . $cls . '">' . esc_html($code) . '</span>';
     }
 
-    /** Renders "B S B" style trading pattern with colour per letter. */
+    /**
+     * Renders "B S B" style trading pattern with colour per letter, followed by a chip for the
+     * port's specialist good if it has one.
+     *
+     * The three letters are the port's class, and say what it does with the three staples in
+     * order. Specialist goods came later and are not part of the class, so they hang off the end
+     * as a marked chip rather than a fourth letter, which would mean a different commodity at
+     * every port.
+     */
     public static function pattern($port) {
         if (!IB_Ports::is_trading_port($port)) return self::port_badge($port);
         $out = '';
         foreach (str_split(IB_Ports::CLASSES[(int) $port->port_class]) as $ch) {
             $out .= '<span class="' . ($ch === 'B' ? 'ib-buy' : 'ib-sell') . '">' . $ch . '</span>';
         }
-        return '<span class="ib-port-code">' . $out . '</span>';
+        return '<span class="ib-port-code">' . $out . '</span>' . self::specialist_chip($port);
+    }
+
+    /** Initials for the specialist goods, for the chip on a port badge. */
+    const SPECIALIST_INITIALS = ['isotopes' => 'I', 'medicine' => 'M', 'luxuries' => 'L'];
+
+    /**
+     * "&#9670;I" after a port's class code: the specialist good it deals in, coloured like the
+     * class letters, green where the port buys and cyan where it sells.
+     */
+    public static function specialist_chip($port) {
+        $key = IB_Ports::specialty($port);
+        if (!$key) return '';
+        $buying = IB_Ports::mode($port, $key) === 'buying';
+        $initial = isset(self::SPECIALIST_INITIALS[$key]) ? self::SPECIALIST_INITIALS[$key] : strtoupper(substr($key, 0, 1));
+        return ' <span class="ib-spec-chip ' . ($buying ? 'ib-buy' : 'ib-sell') . '" title="'
+            . esc_attr(sprintf('%s %s', $buying ? 'Buys' : 'Sells', IB_Game::label($key)))
+            . '">&#9670;' . esc_html($initial) . '</span>';
     }
 
     public static function time_ago($mysql) {

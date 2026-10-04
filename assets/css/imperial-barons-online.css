@@ -79,6 +79,8 @@
 .ib-game.ib-game .ib-buy { color: var(--ib-green); }
 .ib-game.ib-game .ib-sell { color: var(--ib-cyan); }
 .ib-game.ib-game .ib-special { color: var(--ib-magenta); font-weight: bold; }
+/* The specialist chip after a port's class code: BBS followed by a diamond and an initial. */
+.ib-game.ib-game .ib-spec-chip { font-weight: bold; white-space: nowrap; font-size: .9em; letter-spacing: 0; }
 .ib-game.ib-game .ib-beacon { color: var(--ib-magenta); }
 .ib-game.ib-game .ib-big { font-size: 2em; color: var(--ib-yellow); margin: 0; }
 .ib-small { font-size: .85em; }

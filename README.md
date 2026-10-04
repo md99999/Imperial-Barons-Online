@@ -421,7 +421,11 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
 - **Specialist goods.** Some ports also deal in one of three specialist goods: Rare Isotopes,
   Medicine or Luxuries. They are worth several times a staple per hold and swing further in price,
   but stocks are small and such ports are scarce near Aurelia and more common out on the frontier.
-  Planets do not produce them. The Computer's port finder and known-port report both list them.
+  Planets do not produce them. Because the three letters are the port's class and cover only the
+  staples, a specialist appears as a chip after them — `BBS ◆I`, `◆M` or `◆L` for Isotopes,
+  Medicine or Luxuries — coloured green where the port buys and cyan where it sells, exactly like the
+  B and S letters, and hovering it says which way round it is. The chip shows everywhere a port badge
+  does: the sensor sweep, the Port page's suggestions, the port finder and the known-port report.
 - **Haggling.** Offer a better price than the port lists. It may accept (bonus experience),
   counter-offer, or refuse to haggle with you for an hour if you push too hard.
 - **Aurelia and the Imperial Drydock.** The Aurelian Armory in sector 1 sells holds, fighters,

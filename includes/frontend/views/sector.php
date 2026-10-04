@@ -66,6 +66,7 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
                 <td><?php echo $s['sector'] ? esc_html($s['sector']->nebula) : ''; ?></td>
                 <td><?php echo $s['port']
                         ? IB_UI::fly_to($p, $to, $move_cost + $dock_cost, IB_Ports::class_code((int) $s['port']->port_class), true)
+                            . IB_UI::specialist_chip($s['port'])
                         : '<span class="ib-dim">none</span>'; ?></td>
                 <td><?php echo $s['planets'] ?: '<span class="ib-dim">0</span>'; ?></td>
                 <td><?php echo $s['hostile'] ? '<span class="ib-bad">' . IB_Game::fmt($s['hostile']) . '</span>' : '<span class="ib-dim">none</span>'; ?></td>
@@ -77,7 +78,12 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
     </div>
     <p class="ib-small ib-dim">Tap a sector number to warp straight there (<?php echo $move_cost; ?> turn), or a port's
         class code to warp and dock in one go (<?php echo $move_cost + $dock_cost; ?> turns).
-        Unvisited sectors are highlighted; a jump into hostile fighters asks first.</p>
+        Unvisited sectors are highlighted; a jump into hostile fighters asks first.
+        A port's three letters are what it does with the staples &mdash; ferrium ore, biostock, machinery, in that order,
+        <span class="ib-buy">B</span> where it buys and <span class="ib-sell">S</span> where it sells.
+        <span class="ib-spec-chip ib-sell">&#9670;I</span> <span class="ib-spec-chip ib-sell">&#9670;M</span>
+        <span class="ib-spec-chip ib-sell">&#9670;L</span> mark a port that also deals in Rare Isotopes,
+        Medicine or Luxuries, in the same colours.</p>
     <?php if ((int) $p->survey_drones > 0) : ?>
         <?php echo IB_UI::button('launch_drone', sprintf('Launch survey drone (%d left): chart everything within %d warps', (int) $p->survey_drones, IB_Discovery::DRONE_RADIUS), [], 'ib-btn-alt'); ?>
     <?php else : ?>
