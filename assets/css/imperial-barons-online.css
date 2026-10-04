@@ -132,6 +132,16 @@
 .ib-game.ib-game .ib-btn-danger, .ib-game.ib-game a.ib-btn-danger, .ib-game.ib-game a.ib-btn-danger:visited { background: var(--ib-red); border-color: var(--ib-red); color: var(--ib-ink); }
 .ib-game.ib-game .ib-btn-danger:hover, .ib-game.ib-game a.ib-btn-danger:hover { background: var(--ib-yellow); border-color: var(--ib-yellow); color: var(--ib-ink); }
 .ib-game.ib-game .ib-btn-small { padding: 3px 8px; font-size: .82em; }
+/* A link-styled action: the sector numbers that fly you to a port and dock. It is a real
+   submit button so the action keeps its nonce, and only looks like a link. */
+.ib-game.ib-game .ib-linkish {
+  display: inline; font-family: var(--ib-font); font-size: 1em; line-height: inherit;
+  padding: 0; margin: 0; border: 0; background: none; color: var(--ib-cyan);
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.ib-game.ib-game .ib-linkish:hover, .ib-game.ib-game .ib-linkish:focus { color: var(--ib-yellow); }
+.ib-game .ib-linkish:focus-visible { outline: 2px solid var(--ib-yellow); outline-offset: 2px; }
+
 .ib-game .ib-btn:focus-visible, .ib-game a:focus-visible, .ib-game input:focus-visible, .ib-game select:focus-visible, .ib-game textarea:focus-visible { outline: 2px solid var(--ib-yellow); outline-offset: 2px; }
 
 /*
@@ -239,6 +249,9 @@
 .ib-footer-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 
 @media (max-width: 600px) {
+  /* A bare number is a small target; pad it out to something a thumb can hit. */
+  .ib-game.ib-game .ib-linkish { display: inline-block; padding: 8px 6px; }
+
   .ib-game { padding: 10px; font-size: 14px; border-radius: 0; }
   .ib-kv th { width: auto; }
   .ib-num { width: 6em; }

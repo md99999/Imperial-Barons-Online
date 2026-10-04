@@ -439,7 +439,11 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   cargo** lists the charted ports that will buy what is in your holds — best payout first, spread
   across the commodities you carry, with the price, how many units that port can take and the turns
   the trip costs. **Fly & dock** on any row plots the course, flies it and docks when you arrive, so
-  a trade run is one click rather than a trip to the Computer and back. With empty holds the panel
+  a trade run is one click rather than a trip to the Computer and back. The sector number itself
+  does the same thing wherever a port is listed — in that panel, in the Port finder, in the known-port
+  table and on the plotted course — and in the Sector page's sensor sweep a neighbour's class code
+  (BBS, SBB and so on) warps and docks in one go. A number you cannot reach today is shown plain,
+  with a tooltip saying how many turns it would need. With empty holds the panel
   turns into *What to pick up next*. Below it sits a compact **ship's computer**: fly straight to a
   sector number, or search for a port that buys or sells one commodity.
 - **The Computer.** The full version of the same tools, and the place to plan rather than react: plot

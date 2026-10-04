@@ -32,7 +32,7 @@ $ib_carrying = IB_Player::holds_used($p) > 0;
                     <td><?php echo esc_html(IB_Game::label($run['commodity'])); ?>
                         <?php if (IB_Game::is_specialist($run['commodity'])) : ?><span class="ib-special" title="Specialist good">&#9670;</span><?php endif; ?></td>
                     <td><?php echo esc_html($run['port']->port_name); ?> <?php echo IB_UI::pattern($run['port']); ?></td>
-                    <td><?php echo (int) $run['port']->sector_id; ?></td>
+                    <td><?php echo IB_UI::fly_to($p, $run['port']->sector_id, $run['turns'], null, true); ?></td>
                     <td><?php echo IB_Game::fmt($run['price']); ?></td>
                     <td><?php echo IB_Game::fmt($run['units']); ?></td>
                     <td><?php echo IB_Game::fmt($run['value']); ?></td>

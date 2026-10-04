@@ -26,7 +26,9 @@ $planets = IB_Planets::in_sector($sid);
 $ships = IB_Player::in_sector($sid, $p->id);
 $fleets = IB_Combat::fleets_in_sector($sid);
 $fed = (bool) $sector->is_core;
-$can_move = (int) $p->turns_remaining >= (int) IB_Settings::get('move_turn_cost');
+$move_cost = (int) IB_Settings::get('move_turn_cost');
+$dock_cost = (int) IB_Settings::get('dock_turn_cost');
+$can_move = (int) $p->turns_remaining >= $move_cost;
 $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Combat::fleet_is_friendly($p, $f); });
 ?>
 <div class="ib-panel ib-sector-head">
@@ -62,7 +64,9 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
                 <td><?php echo IB_UI::button('move', (string) (int) $to, ['to' => $to], 'ib-btn-small' . (isset($visited[$to]) ? ' ib-btn-alt' : ''),
                         $s['hostile'] ? sprintf('Sector %d holds %s hostile fighters. Jump anyway?', $to, IB_Game::fmt($s['hostile'])) : ''); ?></td>
                 <td><?php echo $s['sector'] ? esc_html($s['sector']->nebula) : ''; ?></td>
-                <td><?php echo $s['port'] ? IB_UI::pattern($s['port']) : '<span class="ib-dim">none</span>'; ?></td>
+                <td><?php echo $s['port']
+                        ? IB_UI::fly_to($p, $to, $move_cost + $dock_cost, IB_Ports::class_code((int) $s['port']->port_class), true)
+                        : '<span class="ib-dim">none</span>'; ?></td>
                 <td><?php echo $s['planets'] ?: '<span class="ib-dim">0</span>'; ?></td>
                 <td><?php echo $s['hostile'] ? '<span class="ib-bad">' . IB_Game::fmt($s['hostile']) . '</span>' : '<span class="ib-dim">none</span>'; ?></td>
                 <td><?php echo isset($visited[$to]) ? 'Visited' : '<span class="ib-special">Unvisited</span>'; ?></td>
@@ -71,7 +75,8 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
         </tbody>
     </table>
     </div>
-    <p class="ib-small ib-dim">Tap a sector number to warp straight there (<?php echo (int) IB_Settings::get('move_turn_cost'); ?> turn).
+    <p class="ib-small ib-dim">Tap a sector number to warp straight there (<?php echo $move_cost; ?> turn), or a port's
+        class code to warp and dock in one go (<?php echo $move_cost + $dock_cost; ?> turns).
         Unvisited sectors are highlighted; a jump into hostile fighters asks first.</p>
     <?php if ((int) $p->survey_drones > 0) : ?>
         <?php echo IB_UI::button('launch_drone', sprintf('Launch survey drone (%d left): chart everything within %d warps', (int) $p->survey_drones, IB_Discovery::DRONE_RADIUS), [], 'ib-btn-alt'); ?>

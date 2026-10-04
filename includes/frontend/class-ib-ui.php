@@ -122,6 +122,51 @@ class IB_UI {
         return $html . '<button type="submit" class="ib-btn ' . esc_attr($class) . '"' . $attr . '>' . esc_html($label) . '</button></form>';
     }
 
+    /**
+     * An action that looks like a link rather than a button: used for the sector numbers beside
+     * ports, which fly you there and dock. It stays a POST with its nonce, because clicking it
+     * spends turns, and a link that changes the game on a GET would be both wrong and unsafe.
+     */
+    public static function link_button($action, $label, $fields = [], $title = '', $confirm = '') {
+        $html = self::form_open($action, 'ib-inline');
+        foreach ($fields as $name => $value) {
+            $html .= '<input type="hidden" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '">';
+        }
+        $attr = ($title ? ' title="' . esc_attr($title) . '"' : '')
+            . ($confirm ? ' data-confirm="' . esc_attr($confirm) . '"' : '');
+        return $html . '<button type="submit" class="ib-linkish"' . $attr . '>' . esc_html($label) . '</button></form>';
+    }
+
+    /**
+     * A sector number that flies you there and docks, when that is possible: there is a port, you
+     * are not already in it, and you have the turns. Otherwise it is plain text, with the reason.
+     *
+     * @param object      $p
+     * @param int         $sector
+     * @param int|null    $turns  the turns the trip costs, when already worked out
+     * @param string|null $label  what to show; the sector number by default
+     * @param bool|null   $has_port whether a port is there, when the caller already knows; saves
+     *                              a query per row in the port tables, which run to sixty rows
+     */
+    public static function fly_to($p, $sector, $turns = null, $label = null, $has_port = null) {
+        $sector = (int) $sector;
+        $label = $label === null ? (string) $sector : $label;
+        if ($sector === (int) $p->sector_id) {
+            return '<span title="You are here">' . esc_html($label) . '</span>';
+        }
+        if (!($has_port === null ? IB_Ports::in_sector($sector) : $has_port)) {
+            return '<span title="No port in this sector">' . esc_html($label) . '</span>';
+        }
+        if ($turns !== null && (int) $p->turns_remaining < (int) $turns) {
+            return '<span class="ib-dim" title="' . esc_attr(sprintf('%d turns needed, you have %d', (int) $turns, (int) $p->turns_remaining))
+                . '">' . esc_html($label) . '</span>';
+        }
+        $title = $turns !== null
+            ? sprintf('Fly to sector %d and dock (%d turns)', $sector, (int) $turns)
+            : sprintf('Fly to sector %d and dock', $sector);
+        return self::link_button('fly', $label, ['target' => $sector, 'dock' => 1], $title);
+    }
+
     public static function status_bar($p) {
         $ship = IB_Player::ship($p);
         $items = [

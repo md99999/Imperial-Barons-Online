@@ -43,7 +43,7 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
                 <?php foreach ($path as $sid) :
                     $port = isset($explored[$sid]) ? IB_Ports::in_sector($sid) : null; ?>
                     <li class="<?php echo $sid === $here ? 'ib-current' : ''; ?>">
-                        <?php echo (int) $sid; ?><?php echo isset($visited[$sid]) ? '' : '<span class="ib-dim">*</span>'; ?>
+                        <?php echo $port ? IB_UI::fly_to($p, $sid, null, null, true) : (int) $sid; ?><?php echo isset($visited[$sid]) ? '' : '<span class="ib-dim">*</span>'; ?>
                         <?php echo $port ? IB_UI::pattern($port) : ''; ?>
                     </li>
                 <?php endforeach; ?>
@@ -86,7 +86,7 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
                 <tbody>
                 <?php foreach ($matches as $m) : $port = $m['port']; ?>
                     <tr<?php echo $m['reachable'] ? '' : ' class="ib-dim"'; ?>>
-                        <td><?php echo (int) $port->sector_id; ?></td>
+                        <td><?php echo IB_UI::fly_to($p, $port->sector_id, $m['turns'], null, true); ?></td>
                         <td><?php echo esc_html($port->port_name); ?></td>
                         <td><?php echo IB_UI::pattern($port); ?></td>
                         <td><?php echo IB_Game::fmt($m['units']); ?></td>
@@ -121,7 +121,8 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
             <tbody>
             <?php foreach (array_slice($known_ports, 0, 60) as $port) : ?>
                 <tr>
-                    <td><a href="<?php echo esc_url(IB_UI::url('computer', ['target' => $port->sector_id])); ?>"><?php echo (int) $port->sector_id; ?></a></td>
+                    <td><?php echo IB_UI::fly_to($p, $port->sector_id, (int) $port->distance * $move_cost + (int) IB_Settings::get('dock_turn_cost'), null, true); ?>
+                        <a class="ib-small ib-dim" href="<?php echo esc_url(IB_UI::url('computer', ['target' => $port->sector_id])); ?>">plot</a></td>
                     <td><?php echo esc_html($port->port_name); ?></td>
                     <td><?php echo IB_UI::pattern($port); ?></td>
                     <?php foreach (IB_Game::commodities() as $key) : ?>
@@ -138,7 +139,8 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
             </tbody>
         </table>
         </div>
-        <p class="ib-small ib-dim">Prices shown are what the port currently charges or pays per unit.</p>
+        <p class="ib-small ib-dim">Prices shown are what the port currently charges or pays per unit.
+        A sector number you can reach flies you there and docks; <em>plot</em> shows the course first.</p>
     <?php endif; ?>
 </div>
 

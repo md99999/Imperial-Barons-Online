@@ -56,7 +56,7 @@ $ib_dock = (int) IB_Settings::get('dock_turn_cost');
                 <tbody>
                 <?php foreach ($ib_matches as $m) : ?>
                     <tr<?php echo $m['reachable'] ? '' : ' class="ib-dim"'; ?>>
-                        <td><?php echo (int) $m['port']->sector_id; ?></td>
+                        <td><?php echo IB_UI::fly_to($p, $m['port']->sector_id, $m['turns'], null, true); ?></td>
                         <td><?php echo esc_html($m['port']->port_name); ?></td>
                         <td><?php echo IB_UI::pattern($m['port']); ?></td>
                         <td><?php echo IB_Game::fmt($m['units']); ?></td>
