@@ -10,7 +10,10 @@ class IB_Planets {
     const MAX_PER_SECTOR = 3;
     const TRANSFERABLE = ['colonists', 'ore', 'organics', 'equipment', 'fighters'];
 
-    /** Production is per 1,000 colonists per day. */
+    /**
+     * Production is per 1,000 colonists per day, at the base rate. What a planet actually makes is
+     * this scaled by output_multiplier(): the site's Planet output setting, plus 10% a bastion level.
+     */
     const CLASSES = [
         'V' => ['name' => 'Verdant',     'ore' => 30, 'organics' => 50, 'equipment' => 20, 'fighters' => 10, 'max_colonists' => 30000],
         'D' => ['name' => 'Dune',        'ore' => 50, 'organics' => 10, 'equipment' => 20, 'fighters' => 10, 'max_colonists' => 20000],
@@ -262,6 +265,29 @@ class IB_Planets {
         return sprintf('The Worldseed takes root... a new %s planet, %s, forms before your eyes!', self::class_name($class), $name);
     }
 
+    /**
+     * How much a planet makes against the base rates: the site's Planet output setting (200% by
+     * default, so colonists are twice as productive as the class tables alone suggest), and a
+     * further 10% for each level of bastion, which gives fortifying a world a return beyond
+     * defending it.
+     */
+    public static function output_multiplier($planet) {
+        $pct = max(0, (int) IB_Settings::get('planet_output_percent'));
+        $level = isset($planet->bastion_level) ? (int) $planet->bastion_level : 0;
+        return $pct / 100 * (1 + 0.10 * $level);
+    }
+
+    /** This planet's daily output per 1,000 colonists, after the multiplier. */
+    public static function output_rates($planet) {
+        $def = isset(self::CLASSES[$planet->planet_class]) ? self::CLASSES[$planet->planet_class] : self::CLASSES['V'];
+        $multiplier = self::output_multiplier($planet);
+        $rates = [];
+        foreach (['ore', 'organics', 'equipment', 'fighters'] as $k) {
+            $rates[$k] = $def[$k] * $multiplier;
+        }
+        return $rates;
+    }
+
     /** Rounds fractional production up or down at random so small colonies still produce over time. */
     private static function random_round($x) {
         $whole = (int) floor($x);
@@ -272,9 +298,9 @@ class IB_Planets {
     public static function produce() {
         global $wpdb;
         $t = IB_DB::t('planets');
-        $planets = $wpdb->get_results("SELECT id, planet_class, colonists FROM $t WHERE colonists > 0 AND planet_class <> 'C'");
+        $planets = $wpdb->get_results("SELECT id, planet_class, colonists, bastion_level FROM $t WHERE colonists > 0 AND planet_class <> 'C'");
         foreach ($planets as $pl) {
-            $rates = self::CLASSES[$pl->planet_class] ?? self::CLASSES['V'];
+            $rates = self::output_rates($pl);
             $gain = [];
             foreach (['ore', 'organics', 'equipment', 'fighters'] as $k) {
                 $gain[$k] = self::random_round($pl->colonists / 1000 * $rates[$k] / 24);

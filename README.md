@@ -456,8 +456,12 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   fighters are deployed. Pair two neighbouring ports with opposite classes (for example SBB and BSS)
   for a profitable run in both directions.
 - **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities and
-  fighters every hour, at the rate their planet class quotes per 1,000 colonists a day, and a colony
-  grows 5% a day by itself up to the planet's capacity. Settlers travel in berths rather than one to a
+  fighters every hour, and a colony grows 5% a day by itself up to the planet's capacity. Output is
+  quoted per 1,000 colonists a day and scaled by the **Planet output** setting, 200% by default, with
+  a further 10% for every bastion level — so a fortified world repays the building, not just the
+  defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 60/100/40 + 20
+  at the default, and 96/160/64 + 32 behind a level 6 Sovereign Spire. The Planet page shows the rate
+  for the world you are standing on, what it yields at its current size, and the base rate behind it. Settlers travel in berths rather than one to a
   hold — 50 to a hold by default, so a 75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 —
   which is what makes founding a colony a trip or two rather than a fortnight of shuttling. Set
   **Colonists per cargo hold** in Settings to tune it. Bastions (levels 1–6) add a vault, stronger

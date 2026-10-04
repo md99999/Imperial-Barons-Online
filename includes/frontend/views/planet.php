@@ -87,12 +87,21 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
             <tr><th>Colonists</th><td><?php echo IB_Game::fmt($planet->colonists); ?> / <?php echo IB_Game::fmt($def['max_colonists']); ?></td></tr>
             <tr><th>Bastion</th><td><?php echo $level ? 'Level ' . $level . ' - ' . esc_html(IB_Planets::BASTION[$level]['name']) : 'None'; ?></td></tr>
             <?php if ($friendly && $level) : ?><tr><th>Vault</th><td><?php echo IB_Game::fmt($planet->bastion_vault); ?> cr</td></tr><?php endif; ?>
-            <tr><th>Daily output per 1,000 colonists</th><td><?php echo (int) $def['ore']; ?> ferrium ore, <?php echo (int) $def['organics']; ?> biostock, <?php echo (int) $def['equipment']; ?> machinery, <?php echo (int) $def['fighters']; ?> fighters</td></tr>
+            <?php $rates = IB_Planets::output_rates($planet); ?>
+            <tr><th>Daily output per 1,000 colonists</th><td><?php printf('%s ferrium ore, %s biostock, %s machinery, %s fighters',
+                    IB_Game::fmt(round($rates['ore'], 1)), IB_Game::fmt(round($rates['organics'], 1)),
+                    IB_Game::fmt(round($rates['equipment'], 1)), IB_Game::fmt(round($rates['fighters'], 1))); ?>
+                <?php if ($level) : ?>
+                    <span class="ib-good ib-small">includes +<?php echo 10 * $level; ?>% from the bastion</span>
+                <?php endif; ?>
+                <span class="ib-dim ib-small">(base rate for a <?php echo esc_html($def['name']); ?>:
+                    <?php echo (int) $def['ore']; ?>/<?php echo (int) $def['organics']; ?>/<?php echo (int) $def['equipment']; ?>
+                    + <?php echo (int) $def['fighters']; ?> fighters)</span></td></tr>
             <?php if ((int) $planet->colonists > 0) :
                 $share = $planet->colonists / 1000; ?>
                 <tr><th>At this colony's size</th><td><?php printf('%s ferrium ore, %s biostock, %s machinery, %s fighters a day',
-                    IB_Game::fmt(round($def['ore'] * $share, 1)), IB_Game::fmt(round($def['organics'] * $share, 1)),
-                    IB_Game::fmt(round($def['equipment'] * $share, 1)), IB_Game::fmt(round($def['fighters'] * $share, 1))); ?>
+                    IB_Game::fmt(round($rates['ore'] * $share, 1)), IB_Game::fmt(round($rates['organics'] * $share, 1)),
+                    IB_Game::fmt(round($rates['equipment'] * $share, 1)), IB_Game::fmt(round($rates['fighters'] * $share, 1))); ?>
                     <span class="ib-dim">(the colony also grows 5% a day on its own)</span></td></tr>
             <?php endif; ?>
         </table>
