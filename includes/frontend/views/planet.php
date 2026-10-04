@@ -39,23 +39,58 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
         <h3>Your planets</h3>
         <?php if (!$mine) : ?>
             <p class="ib-dim">You don't own any planets yet. Claim an unowned planet or buy a Worldseed at the Imperial Drydock.</p>
-        <?php else : ?>
+        <?php else :
+            // One search of the warp map answers "how far is each of my worlds?" for the whole table.
+            $dist = IB_Pathfinder::distances(null, (int) $p->sector_id);
+            $move_cost = (int) IB_Settings::get('move_turn_cost'); ?>
+            <div class="ib-table-wrap">
             <table class="ib-table">
-                <thead><tr><th>Planet</th><th>Sector</th><th>Colonists</th><th>Fighters</th><th>Bastion</th></tr></thead>
+                <thead><tr><th>Planet</th><th>Sector</th><th>Warps</th><th>Turns</th><th>Risk</th><th>Colonists</th><th>Fighters</th><th>Bastion</th><th></th></tr></thead>
                 <tbody>
-                <?php foreach ($mine as $pl) : ?>
-                    <tr>
-                        <td><?php echo esc_html($pl->planet_name); ?></td>
-                        <td><a href="<?php echo esc_url(IB_UI::url('computer', ['target' => $pl->sector_id])); ?>"><?php echo (int) $pl->sector_id; ?></a></td>
+                <?php foreach ($mine as $pl) :
+                    $here = (int) $pl->sector_id === (int) $p->sector_id;
+                    $hops = isset($dist[(int) $pl->sector_id]) ? (int) $dist[(int) $pl->sector_id] : null;
+                    $turns = $hops === null ? null : $hops * $move_cost;
+                    $reachable = $turns !== null && (int) $p->turns_remaining >= $turns;
+                    $risk = ($here || $hops === null)
+                        ? null
+                        : IB_Pathfinder::route_risk($p, IB_Pathfinder::shortestPath(null, (int) $p->sector_id, (int) $pl->sector_id)); ?>
+                    <tr<?php echo ($here || $reachable) ? '' : ' class="ib-dim"'; ?>>
+                        <td><?php echo esc_html($pl->planet_name); ?>
+                            <span class="ib-dim ib-small">(<?php echo esc_html(IB_Planets::class_name($pl->planet_class)); ?>)</span></td>
+                        <td><?php echo IB_UI::fly_to_planet($p, $pl, $turns); ?></td>
+                        <td><?php echo $here ? '<span class="ib-good">here</span>' : ($hops === null ? '<span class="ib-dim">no route</span>' : $hops); ?></td>
+                        <td><?php echo $here ? '0' : ($turns === null ? '-' : (int) $turns); ?></td>
+                        <td><?php echo $risk ? IB_UI::risk_badge($risk) : '<span class="ib-dim">-</span>'; ?></td>
                         <td><?php echo IB_Game::fmt($pl->colonists); ?></td>
                         <td><?php echo IB_Game::fmt($pl->fighters); ?></td>
                         <td><?php echo (int) $pl->bastion_level; ?></td>
+                        <td><?php if ($here) {
+                                echo IB_UI::button('land', 'Land', ['planet_id' => $pl->id], 'ib-btn-small');
+                            } elseif ($reachable) {
+                                echo IB_UI::button('fly', 'Fly & land', ['target' => (int) $pl->sector_id, 'planet' => (int) $pl->id], 'ib-btn-small');
+                            } elseif ($hops === null) {
+                                echo '<span class="ib-small ib-dim">no charted route</span>';
+                            } else {
+                                echo '<span class="ib-small ib-bad">not enough turns</span>';
+                            } ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
+            <p class="ib-small ib-dim">Turns counts the warps there; landing itself is free, as are cargo transfers
+                once you are down. <strong>Fly &amp; land</strong> flies the course and sets you down in one click,
+                and so does the sector number. Autopilot stops early on hostile contact or when the turns run out.<br>
+                <strong>Risk</strong> is your navigator's reading of the course ahead &mdash; how much of it runs outside
+                the Crown's Peace, how much of it you have never charted, and what is deployed along the way. It will not
+                tell you what is out there: sweep a sector, or send a survey drone, if you want to know before you fly.</p>
         <?php endif; ?>
     </div>
+
+    <?php
+    /* A colony fills the holds; this is where to take them, without a trip to the Port page. */
+    include IB_PATH . 'includes/frontend/views/_nearby-ports.php'; ?>
 
 <?php elseif ($planet->planet_class === IB_Planets::CROWN_WORLD) : ?>
     <div class="ib-panel">

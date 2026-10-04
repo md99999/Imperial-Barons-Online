@@ -283,6 +283,30 @@ class IB_Combat {
     }
 
     /** All fighters a player has deployed across the galaxy. */
+    /**
+     * Hostile fighters deployed in each of the given sectors, in one query rather than one per
+     * sector. Hostile means not yours and not your team's, the same test fleet_is_friendly()
+     * applies to a single fleet.
+     *
+     * @return array [sector_id => fighters]
+     */
+    public static function hostiles_by_sector($p, array $sectors) {
+        global $wpdb;
+        $sectors = array_values(array_unique(array_map('intval', $sectors)));
+        if (!$sectors) return [];
+        $in = implode(',', array_fill(0, count($sectors), '%d'));
+        $sql = 'SELECT sector_id, SUM(fighter_count) total FROM ' . IB_DB::t('fleets')
+            . " WHERE fighter_count > 0 AND sector_id IN ($in)"
+            . ' AND NOT (owner_player_id = %d OR (owner_player_id > 0 AND %d > 0 AND team_id = %d))'
+            . ' GROUP BY sector_id';
+        $args = array_merge($sectors, [(int) $p->id, (int) $p->team_id, (int) $p->team_id]);
+        $out = [];
+        foreach ($wpdb->get_results($wpdb->prepare($sql, $args)) as $row) {
+            $out[(int) $row->sector_id] = (int) $row->total;
+        }
+        return $out;
+    }
+
     public static function deployed_by($player_id) {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . IB_DB::t('fleets') . ' WHERE owner_player_id = %d ORDER BY sector_id', $player_id));

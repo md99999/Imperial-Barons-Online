@@ -287,14 +287,28 @@ class IB_Player {
     }
 
     /**
-     * Autopilot to a sector and, if asked, dock on arrival, so a trade run is one click rather
-     * than plot, engage, dock. Lands the player on the page that matches where they ended up.
+     * Autopilot to a sector and, if asked, dock or land on arrival, so a trade run or a visit to
+     * one of your worlds is one click rather than plot, engage, then dock or land. Lands the
+     * player on the page that matches where they ended up.
      *
+     * @param  int $land_planet_id a planet to land on instead of docking, when it is still there
      * @return array [messages, page key to redirect to]
      */
-    public static function fly($p, $target, $dock = false) {
+    public static function fly($p, $target, $dock = false, $land_planet_id = 0) {
         $msgs = self::autopilot($p, $target);
         $arrived = (int) $p->sector_id === (int) $target;
+        if ($land_planet_id) {
+            if (!$arrived || !empty($p->destroyed)) return [$msgs, 'sector'];
+            try {
+                $planet = IB_Planets::land($p, (int) $land_planet_id);
+                $msgs[] = ['success', sprintf('Landed on %s.', $planet->planet_name)];
+                return [$msgs, 'planet'];
+            } catch (IB_Game_Exception $e) {
+                // Arriving is still worth something, so report why the landing failed and stop there.
+                $msgs[] = ['warning', $e->getMessage()];
+                return [$msgs, 'sector'];
+            }
+        }
         if (!$dock || !$arrived || !empty($p->destroyed)) {
             return [$msgs, 'sector'];
         }

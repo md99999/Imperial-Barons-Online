@@ -167,6 +167,43 @@ class IB_UI {
         return self::link_button('fly', $label, ['target' => $sector, 'dock' => 1], $title);
     }
 
+    /**
+     * A planet's sector number that flies you there and lands, when you can reach it. Landing
+     * itself is free, so the cost is purely the warps.
+     *
+     * @param object      $p
+     * @param object      $planet
+     * @param int|null    $turns the turns the trip costs, when already worked out
+     * @param string|null $label what to show; the sector number by default
+     */
+    public static function fly_to_planet($p, $planet, $turns = null, $label = null) {
+        $sector = (int) $planet->sector_id;
+        $label = $label === null ? (string) $sector : $label;
+        if ($sector === (int) $p->sector_id) {
+            return '<span title="You are here">' . esc_html($label) . '</span>';
+        }
+        if ($turns !== null && (int) $p->turns_remaining < (int) $turns) {
+            return '<span class="ib-dim" title="' . esc_attr(sprintf('%d turns needed, you have %d', (int) $turns, (int) $p->turns_remaining))
+                . '">' . esc_html($label) . '</span>';
+        }
+        return self::link_button('fly', $label, ['target' => $sector, 'planet' => (int) $planet->id],
+            $turns !== null
+                ? sprintf('Fly to %s and land (%d turns)', $planet->planet_name, (int) $turns)
+                : sprintf('Fly to %s and land', $planet->planet_name));
+    }
+
+    /**
+     * A route's risk as pips and a word: how the Planet page shows that a course looks dangerous
+     * without saying what is waiting on it.
+     */
+    public static function risk_badge($risk) {
+        $level = max(0, min(4, (int) $risk['level']));
+        $class = $level >= 3 ? 'ib-bad' : ($level === 2 ? 'ib-special' : 'ib-good');
+        $pips = str_repeat('&#9679;', $level) . str_repeat('&#9675;', 4 - $level);
+        return '<span class="ib-risk ' . $class . '" title="' . esc_attr(sprintf('Route risk: %s', $risk['label'])) . '">'
+            . $pips . ' <span class="ib-small">' . esc_html($risk['label']) . '</span></span>';
+    }
+
     public static function status_bar($p) {
         $ship = IB_Player::ship($p);
         $items = [

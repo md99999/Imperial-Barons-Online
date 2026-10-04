@@ -462,7 +462,16 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 90/150/60 + 30
   at the default, and 144/240/96 + 48 behind a level 6 Sovereign Spire. A colony of a thousand
   settlers makes 300 units of cargo a day, four loads for a 75-hold Freetrader, and planet stock has
-  no ceiling, so what you cannot carry today keeps until you come back. The Planet page shows the rate
+  no ceiling, so what you cannot carry today keeps until you come back.
+- **Visiting your worlds.** The Planet page lists every planet you own with the warps and turns to
+  reach it and a **Fly & land** button, which flies the course and sets you down in one click; the
+  sector number does the same. Landing is free, so the turns are purely the warps. Under it, a
+  **Nearest ports** table gives the closest charted ports with their class, distance and the same
+  one-click **Fly & dock**, for when a colony has just filled your holds.
+- **Route risk.** Both tables carry a **Risk** reading of the course ahead, from Quiet to Severe. It
+  is built from how much of the route runs outside the Crown's Peace, how much of it you have never
+  charted, and what is deployed along the way — but it never says what is waiting, whose it is or
+  how much of it there is. Sweep a sector or send a survey drone if you want to know before you fly. The Planet page shows the rate
   for the world you are standing on, what it yields at its current size, and the base rate behind it. Settlers travel in berths rather than one to a
   hold — 50 to a hold by default, so a 75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 —
   which is what makes founding a colony a trip or two rather than a fortnight of shuttling. Set
