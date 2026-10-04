@@ -6,9 +6,10 @@ $port = IB_Ports::in_sector($p->sector_id);
 <?php if (!$port) : ?>
     <div class="ib-panel">
         <h2>No port</h2>
-        <p>There is no port in sector <?php echo (int) $p->sector_id; ?>.</p>
-        <p><a class="ib-btn" href="<?php echo esc_url(IB_UI::url('computer')); ?>">Find a port with the computer</a></p>
+        <p>There is no port in sector <?php echo (int) $p->sector_id; ?>. Pick one below and fly straight to it.</p>
     </div>
+    <?php include IB_PATH . 'includes/frontend/views/_next-run.php'; ?>
+    <?php $ib_panel_page = 'port'; include IB_PATH . 'includes/frontend/views/_computer-panel.php'; ?>
 <?php return; endif;
 
 $docked = (int) $p->docked_port_id === (int) $port->id;
@@ -195,3 +196,10 @@ $class = (int) $port->port_class;
     </div>
 </div>
 <?php endif; ?>
+
+<?php
+/* The loop a trader actually repeats - sell, choose the next port, fly, dock - lives here, so it
+   no longer means a trip to the Computer page and back between every run. */
+include IB_PATH . 'includes/frontend/views/_next-run.php';
+$ib_panel_page = 'port';
+include IB_PATH . 'includes/frontend/views/_computer-panel.php';

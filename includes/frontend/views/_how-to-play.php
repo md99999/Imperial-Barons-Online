@@ -34,7 +34,8 @@ if (!defined('ABSPATH')) exit;
             a meteoroid swarm can tear cargo from your holds, a revenue cutter can collect the Crown's tithe from your
             accounts, and a false distress call can turn out to be Reaver Pirates lying in wait. Whatever happens is
             reported in the Imperial Gazette for every pilot to read. Survey drones and nebula charts from the Armory or Drydock put more of the galaxy on your map.</li>
-        <li><strong>Using the <a href="<?php echo esc_url(IB_UI::url('computer')); ?>">Computer</a>.</strong> Your ship's Computer is your best tool for making every turn count.
+        <li><strong>Running goods.</strong> You do not need to leave the <a href="<?php echo esc_url(IB_UI::url('port')); ?>">Port</a> page between trades. Under the trading table, <em>Where to take this cargo</em> lists the charted ports that buy what is in your holds, best payout first, with the turns each trip costs; <em>Fly &amp; dock</em> plots the course, flies it and docks you on arrival, ready to sell. With empty holds it suggests what to pick up instead. The same page carries a small ship's computer for flying to a sector by number or searching for a port that deals in one commodity.</li>
+        <li><strong>Using the <a href="<?php echo esc_url(IB_UI::url('computer')); ?>">Computer</a>.</strong> Your ship's Computer is the full version of those tools, for planning a longer run.
             <ul>
                 <li><em>Plot a course:</em> enter any sector number to see the shortest route, how many turns it will take, and the ports along the way. You can also click any sector on the Galaxy Map to plot a course there.</li>
                 <li><em>Engage autopilot:</em> flies the plotted course one warp at a time, collecting discoveries as it goes. It stops if you run out of turns or come under attack.</li>

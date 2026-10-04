@@ -435,10 +435,18 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   abandoned fighters or an old survey beacon, or cost you: a meteoroid swarm takes cargo, a revenue
   cutter collects the Crown's tithe, and a false distress call can be a Reaver Pirates ambush.
   Everything that befalls a pilot out there is reported in the Gazette.
-- **The Computer.** Plot the shortest course to any sector, engage the autopilot, use the Port finder
-  to locate the nearest ports that buy or sell a commodity, and review every known port's prices. Pair
-  two neighbouring ports with opposite classes (for example SBB and BSS) for a profitable run in
-  both directions.
+- **Running goods without leaving the Port page.** Under the trading table, **Where to take this
+  cargo** lists the charted ports that will buy what is in your holds — best payout first, spread
+  across the commodities you carry, with the price, how many units that port can take and the turns
+  the trip costs. **Fly & dock** on any row plots the course, flies it and docks when you arrive, so
+  a trade run is one click rather than a trip to the Computer and back. With empty holds the panel
+  turns into *What to pick up next*. Below it sits a compact **ship's computer**: fly straight to a
+  sector number, or search for a port that buys or sells one commodity.
+- **The Computer.** The full version of the same tools, and the place to plan rather than react: plot
+  the shortest course to any sector and see the route before you commit, engage the autopilot or fly
+  and dock in one go, use the Port finder, review every known port's prices, and check where your
+  fighters are deployed. Pair two neighbouring ports with opposite classes (for example SBB and BSS)
+  for a profitable run in both directions.
 - **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities and
   fighters every hour, at the rate their planet class quotes per 1,000 colonists a day, and a colony
   grows 5% a day by itself up to the planet's capacity. Settlers travel in berths rather than one to a

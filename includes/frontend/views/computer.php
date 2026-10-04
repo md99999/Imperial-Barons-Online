@@ -49,7 +49,12 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
                 <?php endforeach; ?>
             </ol>
             <?php echo IB_UI::button('autopilot', 'Engage autopilot', ['target' => $target]); ?>
-            <p class="ib-small ib-dim">Autopilot stops early if you run out of turns or meet trouble. * = not yet visited.</p>
+            <?php if (IB_Ports::in_sector($target)) : ?>
+                <?php echo IB_UI::button('fly', 'Fly & dock', ['target' => $target, 'dock' => 1], 'ib-btn-alt'); ?>
+            <?php endif; ?>
+            <p class="ib-small ib-dim">Autopilot stops early if you run out of turns or meet trouble.
+                <strong>Fly &amp; dock</strong> does the same and docks at the port when you arrive,
+                for <?php echo (int) IB_Settings::get('dock_turn_cost'); ?> turn more. * = not yet visited.</p>
         <?php endif; ?>
     <?php endif; ?>
 </div>
@@ -71,29 +76,36 @@ usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; })
         <button type="submit" class="ib-btn">Search</button>
     </form>
     <?php if (isset(IB_Game::COMMODITIES[$find])) :
-        $matches = array_filter($known_ports, function ($port) use ($find, $want) {
-            return IB_Ports::mode($port, $find) === ($want === 'buy' ? 'selling' : 'buying');
-        });
-        $matches = array_slice(array_values($matches), 0, 10); ?>
+        $matches = IB_Ports::search($p, $find, $want, 10); ?>
         <?php if (!$matches) : ?>
             <p class="ib-dim">No charted port matches. Explore further, or buy a survey drone or nebula chart.</p>
         <?php else : ?>
+            <div class="ib-table-wrap">
             <table class="ib-table">
-                <thead><tr><th>Sector</th><th>Port</th><th>Class</th><th>Units</th><th>Price</th><th>Warps</th><th></th></tr></thead>
+                <thead><tr><th>Sector</th><th>Port</th><th>Class</th><th>Units</th><th>Price</th><th>Warps</th><th>Turns</th><th></th></tr></thead>
                 <tbody>
-                <?php foreach ($matches as $port) : ?>
-                    <tr>
+                <?php foreach ($matches as $m) : $port = $m['port']; ?>
+                    <tr<?php echo $m['reachable'] ? '' : ' class="ib-dim"'; ?>>
                         <td><?php echo (int) $port->sector_id; ?></td>
                         <td><?php echo esc_html($port->port_name); ?></td>
                         <td><?php echo IB_UI::pattern($port); ?></td>
-                        <td><?php echo IB_Game::fmt(IB_Ports::qty($port, $find)); ?></td>
-                        <td><?php echo IB_Game::fmt(IB_Ports::price($port, $find)); ?></td>
-                        <td><?php echo (int) $port->distance; ?></td>
-                        <td><a href="<?php echo esc_url(IB_UI::url('computer', ['target' => $port->sector_id])); ?>">Plot</a></td>
+                        <td><?php echo IB_Game::fmt($m['units']); ?></td>
+                        <td><?php echo IB_Game::fmt($m['price']); ?></td>
+                        <td><?php echo (int) $m['hops']; ?></td>
+                        <td><?php echo (int) $m['turns']; ?></td>
+                        <td>
+                            <a href="<?php echo esc_url(IB_UI::url('computer', ['target' => $port->sector_id])); ?>">Plot</a>
+                            <?php if ($m['reachable']) {
+                                echo ' ' . IB_UI::button('fly', 'Fly & dock', ['target' => (int) $port->sector_id, 'dock' => 1], 'ib-btn-small');
+                            } ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
+            <p class="ib-small ib-dim"><strong>Plot</strong> shows the course first; <strong>Fly &amp; dock</strong>
+                flies it and docks on arrival. Turns counts the warps plus docking.</p>
         <?php endif; ?>
     <?php endif; ?>
 </div>

@@ -70,6 +70,9 @@ class IB_Actions {
                 return [$events ?: [sprintf('Warped to sector %d.', $p->sector_id)], 'sector'];
             case 'autopilot':
                 return [IB_Player::autopilot($p, self::int('target')), 'sector'];
+            case 'fly':
+                // Plot, fly and dock in one go: the whole "where next" loop as a single click.
+                return IB_Player::fly($p, self::int('target'), self::int('dock') === 1);
             case 'launch_drone':
                 return [[IB_Discovery::launch_drone($p)], null];
 

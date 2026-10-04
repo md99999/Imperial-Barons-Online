@@ -306,6 +306,144 @@ class IB_Ports {
     }
 
     /** Hourly: stock and demand recover toward their maximums. */
+    /**
+     * Every port in charted space, with how many warps away it is, nearest first.
+     * Charted means visited, swept by sensors or surveyed: what the pilot could know about.
+     *
+     * @return array list of [port, hops]
+     */
+    public static function charted($p) {
+        global $wpdb;
+        $charted = array_flip(IB_Player::charted_ids($p->id));
+        $dist = IB_Pathfinder::distances(null, (int) $p->sector_id);
+        $out = [];
+        foreach ($wpdb->get_results('SELECT * FROM ' . IB_DB::t('ports')) as $port) {
+            $sector = (int) $port->sector_id;
+            if (!isset($charted[$sector], $dist[$sector])) continue;
+            $out[] = [$port, (int) $dist[$sector]];
+        }
+        usort($out, function ($a, $b) { return $a[1] <=> $b[1]; });
+        return $out;
+    }
+
+    /**
+     * Charted ports that sell ($want 'buy') or buy ($want 'sell') one commodity, nearest first.
+     * Used by the computer panel on the Port page and by the Computer page's port finder.
+     *
+     * @return array rows of ['port', 'price', 'units', 'hops', 'turns', 'reachable']
+     */
+    public static function search($p, $commodity, $want = 'buy', $limit = 10) {
+        if (!isset(IB_Game::COMMODITIES[$commodity])) return [];
+        $mode_wanted = $want === 'sell' ? 'buying' : 'selling';
+        $move = (int) IB_Settings::get('move_turn_cost');
+        $dock = (int) IB_Settings::get('dock_turn_cost');
+        $rows = [];
+        foreach (self::charted($p) as $entry) {
+            list($port, $hops) = $entry;
+            if (!self::is_trading_port($port)) continue;
+            if (!in_array($commodity, self::goods($port), true)) continue;
+            if (self::mode($port, $commodity) !== $mode_wanted) continue;
+            $turns = $hops * $move + ($hops ? $dock : 0);
+            $rows[] = [
+                'port'      => $port,
+                'price'     => self::price($port, $commodity),
+                'units'     => self::qty($port, $commodity),
+                'hops'      => $hops,
+                'turns'     => $turns,
+                'reachable' => (int) $p->turns_remaining >= $turns,
+            ];
+            if (count($rows) >= max(1, (int) $limit)) break;
+        }
+        return $rows;
+    }
+
+    /**
+     * Where to go next: the charted ports that will buy what is in the holds, and, for empty
+     * holds, the ones selling nearby. This is the question a trader asks after every sale, and
+     * answering it on the Port page is what keeps the loop off the Computer page.
+     *
+     * @param  object $p
+     * @param  int    $limit rows to return
+     * @return array  rows of ['port', 'commodity', 'mode', 'price', 'units', 'value', 'hops', 'turns', 'reachable']
+     */
+    public static function runs_for($p, $limit = 8) {
+        $move = (int) IB_Settings::get('move_turn_cost');
+        $dock = (int) IB_Settings::get('dock_turn_cost');
+        $turns = (int) $p->turns_remaining;
+        $here = (int) $p->sector_id;
+
+        $carrying = [];
+        foreach (array_keys(IB_Game::COMMODITIES) as $key) {
+            if ((int) $p->$key > 0) $carrying[$key] = (int) $p->$key;
+        }
+        $selling = !empty($carrying);
+        $rows = [];
+
+        foreach (self::charted($p) as $entry) {
+            list($port, $hops) = $entry;
+            if ((int) $port->sector_id === $here || !self::is_trading_port($port)) continue;
+
+            foreach (self::goods($port) as $key) {
+                $mode = self::mode($port, $key);
+                if ($selling) {
+                    // Somewhere to sell what is aboard.
+                    if ($mode !== 'buying' || empty($carrying[$key])) continue;
+                    $units = min($carrying[$key], self::qty($port, $key));
+                } else {
+                    // Nothing aboard: somewhere to buy, sized to holds and credits.
+                    if ($mode !== 'selling') continue;
+                    $price = self::price($port, $key);
+                    $units = min(self::qty($port, $key), IB_Player::holds_free($p), (int) floor($p->credits / max(1, $price)));
+                }
+                if ($units < 1) continue;
+                $price = self::price($port, $key);
+                $cost = $hops * $move + $dock;
+                $rows[] = [
+                    'port'      => $port,
+                    'commodity' => $key,
+                    'mode'      => $mode,
+                    'price'     => $price,
+                    'units'     => $units,
+                    'value'     => $units * $price,
+                    'hops'      => $hops,
+                    'turns'     => $cost,
+                    'reachable' => $turns >= $cost,
+                ];
+            }
+        }
+
+        // Best first: what the run is worth, then how far away it is. Selling ranks on the money
+        // on offer; buying ranks on the cheapest goods, since the profit comes later.
+        usort($rows, function ($a, $b) use ($selling) {
+            if ($selling) {
+                if ($a['reachable'] !== $b['reachable']) return $a['reachable'] ? -1 : 1;
+                $cmp = $b['value'] <=> $a['value'];
+            } else {
+                if ($a['reachable'] !== $b['reachable']) return $a['reachable'] ? -1 : 1;
+                $cmp = $a['price'] <=> $b['price'];
+            }
+            return $cmp ?: $a['hops'] <=> $b['hops'];
+        });
+
+        // Spread the list across what is aboard, rather than filling it with the one commodity
+        // that happens to pay best: a hold of ore and a hold of biostock each need a buyer.
+        $by_commodity = [];
+        foreach ($rows as $row) $by_commodity[$row['commodity']][] = $row;
+        $out = [];
+        $limit = max(1, (int) $limit);
+        for ($round = 0; count($out) < $limit; $round++) {
+            $added = false;
+            foreach ($by_commodity as $list) {
+                if (!isset($list[$round])) continue;
+                $out[] = $list[$round];
+                $added = true;
+                if (count($out) >= $limit) break;
+            }
+            if (!$added) break;
+        }
+        return $out;
+    }
+
     public static function regenerate() {
         global $wpdb;
         $pct = max(0, (int) IB_Settings::get('port_regen_percent')) / 100;

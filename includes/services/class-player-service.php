@@ -286,6 +286,33 @@ class IB_Player {
         return $msgs;
     }
 
+    /**
+     * Autopilot to a sector and, if asked, dock on arrival, so a trade run is one click rather
+     * than plot, engage, dock. Lands the player on the page that matches where they ended up.
+     *
+     * @return array [messages, page key to redirect to]
+     */
+    public static function fly($p, $target, $dock = false) {
+        $msgs = self::autopilot($p, $target);
+        $arrived = (int) $p->sector_id === (int) $target;
+        if (!$dock || !$arrived || !empty($p->destroyed)) {
+            return [$msgs, 'sector'];
+        }
+        $port = IB_Ports::in_sector($p->sector_id);
+        if (!$port) {
+            $msgs[] = ['warning', 'There is no port in this sector to dock at.'];
+            return [$msgs, 'sector'];
+        }
+        $cost = (int) IB_Settings::get('dock_turn_cost');
+        if ((int) $p->docked_port_id !== (int) $port->id && (int) $p->turns_remaining < $cost) {
+            $msgs[] = ['warning', sprintf('You arrived at %s but have no turn left to dock.', $port->port_name)];
+            return [$msgs, 'sector'];
+        }
+        IB_Ports::dock($p);
+        $msgs[] = ['success', sprintf('Docked at %s.', $port->port_name)];
+        return [$msgs, 'port'];
+    }
+
     public static function jettison($p, $commodity, $qty) {
         $jettisonable = array_merge(array_keys(IB_Game::COMMODITIES), ['colonists']);
         if (!in_array($commodity, $jettisonable, true)) throw new IB_Game_Exception('Invalid cargo.');
