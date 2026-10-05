@@ -32,7 +32,7 @@ $locations = get_registered_nav_menus();
         Installed from <code><?php echo esc_html(IB_Health::folder()); ?></code>.</p>
     <?php if (!$ib_issues) : ?>
         <p class="ib-ok"><strong>Nothing to report.</strong> The plugin is in the folder updates expect, there is only
-            one copy of it, and no repository metadata is sitting in your web root.</p>
+            one copy of it, and no repository metadata or development leftovers are sitting in your web root.</p>
     <?php else : foreach ($ib_issues as $issue) : ?>
         <h3 class="<?php echo $issue['level'] === 'error' ? 'ib-error' : 'ib-warning'; ?>" style="margin-bottom:4px">
             <?php echo esc_html($issue['title']); ?>

@@ -20,7 +20,7 @@ class IB_Health {
      */
     public static function issues() {
         $out = [];
-        foreach ([self::check_duplicates(), self::check_git(), self::check_folder()] as $issue) {
+        foreach ([self::check_duplicates(), self::check_git(), self::check_stray(), self::check_folder()] as $issue) {
             if ($issue) $out[] = $issue;
         }
         return $out;
@@ -79,6 +79,53 @@ class IB_Health {
             'title' => $reachable === true ? 'The repository history is exposed on this site' : 'This copy contains a .git directory',
             'body'  => $body,
         ];
+    }
+
+    /**
+     * Development leftovers that a release never contains: the rest of the .git family, CI and
+     * editor folders, dependency trees, the build tools, and stray archives or logs. None of them
+     * is as serious as a .git directory, which check_git() reports on its own, but none of them
+     * belongs on a live site either. A hand-made zip of the repository carries the lot.
+     */
+    private static function check_stray() {
+        $found = self::stray_entries();
+        if (!$found) return null;
+        $list = '<code>' . implode('</code>, <code>', array_map('esc_html', $found)) . '</code>';
+        return [
+            'level' => 'warning',
+            'title' => count($found) === 1 ? 'A development file is installed with the plugin'
+                                           : 'Development files are installed with the plugin',
+            'body'  => '<p>These are in <code>' . esc_html(self::folder()) . '</code> and are no part of the'
+                . ' plugin: ' . $list . '.</p>'
+                . '<p>They arrive when the repository is zipped by hand rather than built. Nothing here is as'
+                . ' serious as a <code>.git</code> directory, but a live site has no use for any of it, and files'
+                . ' the plugin does not know about are files nobody is checking. Deleting them does not affect the'
+                . ' game; a zip built the way the README describes never contains them in the first place.</p>',
+        ];
+    }
+
+    /**
+     * Names in the plugin folder that a release never has. The whole .git family is matched by
+     * prefix, so .gitattributes, .gitignore, .gitmodules, .github and anything else of that shape
+     * are all caught; .git itself is left to check_git(), which has more to say about it.
+     */
+    public static function stray_entries() {
+        $names = ['.github', '.vscode', '.idea', '.circleci', 'node_modules', 'vendor', 'tools',
+                  '.DS_Store', 'Thumbs.db', 'desktop.ini', 'composer.json', 'composer.lock', 'package.json'];
+        $found = [];
+        $entries = @scandir(untrailingslashit(IB_PATH));
+        if (!$entries) return $found;
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..' || $entry === '.git') continue;
+            $lower = strtolower($entry);
+            $stray = strpos($lower, '.git') === 0
+                || in_array($lower, array_map('strtolower', $names), true)
+                || substr($lower, -4) === '.zip'
+                || substr($lower, -4) === '.log';
+            if ($stray) $found[] = $entry;
+        }
+        sort($found);
+        return $found;
     }
 
     /** Installed under a branch-named folder, which makes the next proper install a second copy. */
