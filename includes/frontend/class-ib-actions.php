@@ -49,8 +49,19 @@ class IB_Actions {
         return wp_unslash((string) $_POST[$name]);
     }
 
+    /**
+     * The largest number a posted field may carry. Well above anything the game can legitimately
+     * ask for, and far enough below PHP_INT_MAX that multiplying two of them stays exact instead
+     * of turning into a float. Posting 99999999999999999999 casts to PHP_INT_MAX, which then
+     * overflows the moment it meets ceil() or a multiplication, and an overflowed value can come
+     * back as zero or negative - which is how a cost becomes free. Nothing is allowed that close
+     * to the edge.
+     */
+    const MAX_INPUT = 1000000000000000;   // 1e15
+
     private static function int($name) {
-        return (int) self::field($name, 0);
+        $value = (int) self::field($name, 0);
+        return max(-self::MAX_INPUT, min(self::MAX_INPUT, $value));
     }
 
     private static function text($name) {

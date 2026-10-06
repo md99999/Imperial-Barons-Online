@@ -121,7 +121,16 @@ class IB_Player {
 
     /** Atomically deducts credits or throws. */
     public static function spend_credits($p, $amount) {
-        $amount = (int) ceil($amount);
+        // Guard the arithmetic before rounding it. ceil() returns a float, and casting a float
+        // bigger than PHP_INT_MAX back to int gives zero or a negative - which would make the
+        // purchase free. A price that large cannot be paid, so say so.
+        if (!is_numeric($amount) || !is_finite((float) $amount)) {
+            throw new IB_Game_Exception('That price is not a number.');
+        }
+        if ((float) $amount > (float) PHP_INT_MAX) {
+            throw new IB_Game_Exception(sprintf('That costs more credits than exist; you have %s.', IB_Game::fmt($p->credits)));
+        }
+        $amount = (int) ceil((float) $amount);
         if ($amount <= 0) return;
         global $wpdb;
         $ok = $wpdb->query($wpdb->prepare(

@@ -196,10 +196,18 @@ class IB_Planets {
         global $wpdb;
         $planet = self::require_friendly($p);
         if ((int) $planet->bastion_level < 1) throw new IB_Game_Exception('Build a bastion to get a Vault.');
+        if (!is_numeric($amount) || (float) $amount > (float) PHP_INT_MAX) {
+            throw new IB_Game_Exception('Enter an amount you actually have.');
+        }
         $amount = (int) $amount;
         if ($amount <= 0) throw new IB_Game_Exception('Enter an amount greater than zero.');
         $t = IB_DB::t('planets');
         if ($dir === 'deposit') {
+            // Checked here as well as in spend_credits, so the Vault can never be credited with
+            // money that was not taken from the pilot.
+            if ($amount > (int) $p->credits) {
+                throw new IB_Game_Exception(sprintf('You only have %s credits.', IB_Game::fmt($p->credits)));
+            }
             IB_Player::spend_credits($p, $amount);
             $wpdb->query($wpdb->prepare("UPDATE $t SET bastion_vault = bastion_vault + %d WHERE id = %d", $amount, $planet->id));
             return sprintf('Deposited %s credits in the Vault.', IB_Game::fmt($amount));

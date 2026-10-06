@@ -58,6 +58,13 @@ flawless: it is what to check, and where a mistake would most likely be.
   player off-site.
 - **Turn, credit and stock changes are atomic** single UPDATE statements with the guard in the
   WHERE clause, so a double-submitted form cannot spend the same turn or credits twice.
+- **Numbers are bounded before they are used.** A posted integer is clamped to 1e15, far above
+  anything the game asks for and far enough below `PHP_INT_MAX` that arithmetic on it stays exact.
+  That matters because a value near the maximum overflows into a float the moment it is multiplied
+  or rounded, and casting that back to an integer can produce zero or a negative - which would turn
+  a price into nothing. Costs are checked for being representable before they are rounded, and
+  quantities are bounded against stock, holds, or what the pilot is carrying before any money or
+  cargo moves.
 
 ## If you deploy from a git clone
 
@@ -82,6 +89,15 @@ succeeded; attacks on another pilot across sector boundaries, recalls of someone
 deletions of someone else's mail, negative and overflowing quantities, commodity names aimed at
 database columns, and spending credits and turns that do not exist — all refused. Finally, the
 plugin's own files were requested over HTTP to confirm that none of them return anything.
+
+Numeric inputs are probed separately, because the database on a typical host is not in strict mode
+and an out-of-range write is silently clamped rather than refused, which would hand a player two
+billion of whatever the column holds. Every numeric field a player can post is fired at with
+`99999999999999999999`, `PHP_INT_MAX`, values just over a 32-bit column, and float-formatted
+strings, and the result is checked for credits or cargo that were not paid for and for any column
+sitting at exactly 2147483647. That probe found a real one: an oversized Vault deposit cost
+nothing, because the price overflowed to zero on the way to being charged. It is fixed, and the
+check that found it runs against every release.
 
 This is a hobby project, not an audited product, and a clean run of these checks is evidence rather
 than proof. Please still report anything you find.
