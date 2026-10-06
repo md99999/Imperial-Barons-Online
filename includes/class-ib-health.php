@@ -164,7 +164,7 @@ class IB_Health {
         'admin/views/teams.php', 'admin/views/universe.php', 'assets/', 'assets/css/',
         'assets/css/imperial-barons-online.css', 'assets/css/index.php', 'assets/index.php', 'assets/js/',
         'assets/js/imperial-barons-online.js', 'assets/js/index.php', 'docs/', 'docs/ADMIN-MENU.md',
-        'docs/DATABASE-TABLES.md', 'docs/UNIVERSE_FORGE.md', 'docs/WORDPRESS-PAGES.md', 'docs/index.php',
+        'docs/DATABASE-TABLES.md', 'docs/UNIVERSE_FORGE.md', 'docs/WORDPRESS-PAGES.md', 'docs/index.php', 'docs/setup-bbs-on-wordpress.md',
         'imperial-barons-online.php', 'includes/', 'includes/class-ib-core.php',
         'includes/class-ib-health.php', 'includes/class-ib-installer.php', 'includes/data/',
         'includes/data/class-ib-ships.php', 'includes/data/index.php', 'includes/frontend/',
@@ -188,7 +188,7 @@ class IB_Health {
         'includes/services/class-team-service.php', 'includes/services/class-universe-forge.php',
         'includes/services/index.php', 'index.php', 'maintenance/', 'maintenance/README.md',
         'maintenance/bootstrap.php', 'maintenance/daily_maintenance.php',
-        'maintenance/hourly_maintenance.php', 'maintenance/index.php', 'setup-bbs-on-wordpress.md', 'sql/',
+        'maintenance/hourly_maintenance.php', 'maintenance/index.php', 'sql/',
         'sql/index.php', 'sql/install-schema.php', 'uninstall.php',
     ];
 

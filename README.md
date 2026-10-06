@@ -100,7 +100,7 @@ Works with both classic and block themes (tested with Twenty Twenty-Five).
 ## Installation
 
 > Standing up a whole board rather than adding one game to an existing site?
-> [Setting up WordPress for a BBS Experience](setup-bbs-on-wordpress.md) covers it end to end:
+> [Setting up WordPress for a BBS Experience](docs/setup-bbs-on-wordpress.md) covers it end to end:
 > securing the site before registration opens, a sysop mailbox, membership model, login hardening,
 > the other BBS-door plugins, the menu, and what to test before you open the doors.
 
@@ -546,7 +546,6 @@ uninstall.php                 removes tables and options when the plugin is dele
 .htaccess                     Apache: refuses .git, the schema, docs and logs over the web
 index.php                     one per directory, so nothing can be listed or opened directly
 SECURITY.md                   how to report a vulnerability, and what is in scope
-setup-bbs-on-wordpress.md     running a whole WordPress site as a BBS, start to finish
 sql/install-schema.php        database schema (applied with dbDelta and the site's table prefix)
 includes/class-ib-core.php    settings, table names, logging, ranks
 includes/class-ib-health.php  warns if the install came from a clone or a branch-named zip
@@ -558,5 +557,6 @@ admin/                        wp-admin screens
 assets/                       stylesheet and JavaScript (confirmations, galaxy map pan and zoom)
 maintenance/                  optional CLI scripts for a system cron
 tools/build-zip.php           builds an installable zip with PHP alone (not shipped in releases)
-docs/                         admin, database, page and Universe Forge reference
+docs/                         admin, database, page and Universe Forge reference, and
+                              setup-bbs-on-wordpress.md, running a site as a BBS
 ```
