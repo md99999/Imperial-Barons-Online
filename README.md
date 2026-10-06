@@ -346,10 +346,13 @@ The surest fix is not to deploy `.git` at all: build a zip from the repository a
 `git archive` straight onto the server. The plugin also checks itself: **Imperial Barons Online →
 Dashboard** has an *Install health* panel, and an administrator sees a notice on the Plugins screen,
 if the folder is misnamed, if a `.git` directory is present (it tests whether your server actually
-serves it), if a second copy of the plugin is installed, or if development leftovers came along with
-it — the rest of the `.git` family (`.gitattributes`, `.gitignore`, `.gitmodules`, `.github`),
-editor and CI folders, `node_modules`, `vendor`, the build tools, and stray zips or logs. None of
-those belongs on a live site, and a zip built as described below never contains them. Nothing else in the tree is sensitive — the PHP files all
+serves it), if a second copy of the plugin is installed, or if any file or directory is present that
+this version does not ship. That last check works from a manifest of what a release contains rather
+than a list of known rubbish, so it catches whatever is actually there: the rest of the `.git`
+family, `.github`, `node_modules`, a `.bak` someone made in place, a file left behind by an older
+version that the new one no longer has, or a script that has no business being there at all. The
+build script compares the manifest against what it packs and refuses to build if the two have
+drifted, so the list cannot quietly go stale. Nothing else in the tree is sensitive — the PHP files all
 refuse to run unless WordPress loaded them, the scripts in `maintenance/` refuse to run over the web
 at all, and the table schema lives in a PHP file for the same reason, so it cannot be fetched either.
 

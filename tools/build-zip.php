@@ -57,6 +57,7 @@ $files = new RecursiveIteratorIterator(
 );
 
 $count = 0;
+$packed = [];
 foreach ($files as $file) {
     if ($file->isDir()) continue;
     $name = $file->getFilename();
@@ -65,12 +66,31 @@ foreach ($files as $file) {
     // Zip entries always use forward slashes, whatever the platform's separator is.
     $relative = str_replace(DIRECTORY_SEPARATOR, '/', substr($file->getPathname(), strlen($root) + 1));
     $zip->addFile($file->getPathname(), $slug . '/' . $relative);
+    $packed[] = $relative;
     $count++;
 }
 
 if (!$zip->close()) {
     fwrite(STDERR, "Could not write $out\n");
     exit(1);
+}
+
+// The health check tells administrators which files are not part of a release, which only works
+// while its manifest matches what a release actually contains. Compare the two here, where the
+// drift is cheap to notice, rather than leaving a stale list to cry wolf on somebody's site.
+$health = (string) file_get_contents($root . '/includes/class-ib-health.php');
+if (preg_match('/const MANIFEST = \[(.*?)\];/s', $health, $m)
+    && preg_match_all("/'([^']+)'/", $m[1], $entries)) {
+    $expected = array_values(array_filter($entries[1], function ($path) { return substr($path, -1) !== '/'; }));
+    $missing = array_diff($expected, $packed);
+    $extra   = array_diff($packed, $expected);
+    if ($missing || $extra) {
+        fwrite(STDERR, "\nThe zip and IB_Health::MANIFEST disagree, so the install health check would be wrong.\n");
+        foreach ($missing as $path) fwrite(STDERR, "  in the manifest but not packed: $path\n");
+        foreach ($extra as $path)   fwrite(STDERR, "  packed but not in the manifest: $path\n");
+        fwrite(STDERR, "Update const MANIFEST in includes/class-ib-health.php and build again.\n");
+        exit(1);
+    }
 }
 
 printf("%s\n%d files, %.1f KB, version %s\n", $out, $count, filesize($out) / 1024, $version);

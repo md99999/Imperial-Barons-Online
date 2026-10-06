@@ -20,7 +20,7 @@ class IB_Health {
      */
     public static function issues() {
         $out = [];
-        foreach ([self::check_duplicates(), self::check_git(), self::check_stray(), self::check_folder()] as $issue) {
+        foreach ([self::check_duplicates(), self::check_git(), self::check_unexpected(), self::check_folder()] as $issue) {
             if ($issue) $out[] = $issue;
         }
         return $out;
@@ -82,51 +82,115 @@ class IB_Health {
     }
 
     /**
-     * Development leftovers that a release never contains: the rest of the .git family, CI and
-     * editor folders, dependency trees, the build tools, and stray archives or logs. None of them
-     * is as serious as a .git directory, which check_git() reports on its own, but none of them
-     * belongs on a live site either. A hand-made zip of the repository carries the lot.
+     * Anything in the plugin folder that this version does not ship: leftovers from a repository
+     * zipped by hand, files from an older version that the new one no longer has, a backup someone
+     * made in place, or something that has no business being there at all.
+     *
+     * It works from a manifest of what a release contains rather than a list of known rubbish, so
+     * it notices things nobody thought to look for. .git is left to check_git(), which has more to
+     * say about it.
      */
-    private static function check_stray() {
-        $found = self::stray_entries();
+    private static function check_unexpected() {
+        $found = self::unexpected_entries();
         if (!$found) return null;
-        $list = '<code>' . implode('</code>, <code>', array_map('esc_html', $found)) . '</code>';
+        $shown = array_slice($found, 0, 20);
+        $more = count($found) - count($shown);
+        $list = '<code>' . implode('</code>, <code>', array_map('esc_html', $shown)) . '</code>'
+            . ($more > 0 ? sprintf(' and %d more', $more) : '');
         return [
             'level' => 'warning',
-            'title' => count($found) === 1 ? 'A development file is installed with the plugin'
-                                           : 'Development files are installed with the plugin',
-            'body'  => '<p>These are in <code>' . esc_html(self::folder()) . '</code> and are no part of the'
-                . ' plugin: ' . $list . '.</p>'
-                . '<p>They arrive when the repository is zipped by hand rather than built. Nothing here is as'
-                . ' serious as a <code>.git</code> directory, but a live site has no use for any of it, and files'
-                . ' the plugin does not know about are files nobody is checking. Deleting them does not affect the'
-                . ' game; a zip built the way the README describes never contains them in the first place.</p>',
+            'title' => count($found) === 1 ? 'A file that is not part of this version is installed'
+                                           : 'Files that are not part of this version are installed',
+            'body'  => '<p>These are inside <code>' . esc_html(self::folder()) . '</code> but are no part of '
+                . esc_html(IB_GAME_NAME) . ' ' . esc_html(IB_VERSION) . ': ' . $list . '.</p>'
+                . '<p>Usually that means the repository was zipped by hand instead of built, or an older version'
+                . ' was copied over rather than replaced. It can also mean something was put there that should'
+                . ' not be, which is worth a look either way. Nothing here is loaded by the game, and removing'
+                . ' them over FTP or your host\'s file manager does not affect it. A zip built the way the'
+                . ' README describes contains the manifest and nothing else.</p>',
         ];
     }
 
     /**
-     * Names in the plugin folder that a release never has. The whole .git family is matched by
-     * prefix, so .gitattributes, .gitignore, .gitmodules, .github and anything else of that shape
-     * are all caught; .git itself is left to check_git(), which has more to say about it.
+     * Paths in the plugin folder that are not in MANIFEST, as relative paths with a trailing
+     * slash on directories. An unexpected directory is reported once rather than walked, so one
+     * stray node_modules does not produce a thousand lines. The answer is cached for an hour,
+     * against this version, because the notice runs on every admin page load.
+     *
+     * @param bool $fresh skip the cache
      */
-    public static function stray_entries() {
-        $names = ['.github', '.vscode', '.idea', '.circleci', 'node_modules', 'vendor', 'tools',
-                  '.DS_Store', 'Thumbs.db', 'desktop.ini', 'composer.json', 'composer.lock', 'package.json'];
-        $found = [];
-        $entries = @scandir(untrailingslashit(IB_PATH));
-        if (!$entries) return $found;
-        foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..' || $entry === '.git') continue;
-            $lower = strtolower($entry);
-            $stray = strpos($lower, '.git') === 0
-                || in_array($lower, array_map('strtolower', $names), true)
-                || substr($lower, -4) === '.zip'
-                || substr($lower, -4) === '.log';
-            if ($stray) $found[] = $entry;
+    public static function unexpected_entries($fresh = false) {
+        $key = 'ib_unexpected_files';
+        if (!$fresh) {
+            $cached = get_transient($key);
+            if (is_array($cached) && ($cached['version'] ?? '') === IB_VERSION) return $cached['found'];
         }
+        $expected = array_flip(self::MANIFEST);
+        $found = [];
+        self::scan_unexpected(untrailingslashit(IB_PATH), '', $expected, $found, 0);
         sort($found);
+        set_transient($key, ['version' => IB_VERSION, 'found' => $found], HOUR_IN_SECONDS);
         return $found;
     }
+
+    private static function scan_unexpected($dir, $prefix, $expected, &$found, $depth) {
+        if ($depth > 8 || count($found) > 200) return;
+        $entries = @scandir($dir);
+        if ($entries === false) return;
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') continue;
+            if ($prefix === '' && $entry === '.git') continue;      // check_git() reports that one
+            $path = $dir . '/' . $entry;
+            $rel = $prefix . $entry;
+            if (is_dir($path)) {
+                if (!isset($expected[$rel . '/'])) { $found[] = $rel . '/'; continue; }
+                self::scan_unexpected($path, $rel . '/', $expected, $found, $depth + 1);
+            } elseif (!isset($expected[$rel])) {
+                $found[] = $rel;
+            }
+        }
+    }
+
+    /**
+     * Every path a release of this plugin contains, directories included. Generated from the
+     * built zip; tools/build-zip.php compares what it packs against this list and refuses to
+     * build if the two have drifted, so adding a file to the plugin means adding it here.
+     */
+    const MANIFEST = [
+        '.htaccess', 'LICENSE', 'README.md', 'SECURITY.md', 'admin/', 'admin/class-ib-admin.php',
+        'admin/index.php', 'admin/views/', 'admin/views/dashboard.php', 'admin/views/index.php',
+        'admin/views/logs.php', 'admin/views/maintenance.php', 'admin/views/planets.php',
+        'admin/views/players.php', 'admin/views/ports.php', 'admin/views/settings.php',
+        'admin/views/teams.php', 'admin/views/universe.php', 'assets/', 'assets/css/',
+        'assets/css/imperial-barons-online.css', 'assets/css/index.php', 'assets/index.php', 'assets/js/',
+        'assets/js/imperial-barons-online.js', 'assets/js/index.php', 'docs/', 'docs/ADMIN-MENU.md',
+        'docs/DATABASE-TABLES.md', 'docs/UNIVERSE_FORGE.md', 'docs/WORDPRESS-PAGES.md', 'docs/index.php',
+        'imperial-barons-online.php', 'includes/', 'includes/class-ib-core.php',
+        'includes/class-ib-health.php', 'includes/class-ib-installer.php', 'includes/data/',
+        'includes/data/class-ib-ships.php', 'includes/data/index.php', 'includes/frontend/',
+        'includes/frontend/class-ib-actions.php', 'includes/frontend/class-ib-shortcodes.php',
+        'includes/frontend/class-ib-ui.php', 'includes/frontend/index.php', 'includes/frontend/views/',
+        'includes/frontend/views/_computer-panel.php', 'includes/frontend/views/_how-to-play.php',
+        'includes/frontend/views/_nearby-ports.php', 'includes/frontend/views/_next-run.php',
+        'includes/frontend/views/_welcome.php', 'includes/frontend/views/computer.php',
+        'includes/frontend/views/dashboard.php', 'includes/frontend/views/gazette.php',
+        'includes/frontend/views/howto.php', 'includes/frontend/views/index.php',
+        'includes/frontend/views/map.php', 'includes/frontend/views/messages.php',
+        'includes/frontend/views/planet.php', 'includes/frontend/views/port.php',
+        'includes/frontend/views/rankings.php', 'includes/frontend/views/sector.php',
+        'includes/frontend/views/ship.php', 'includes/frontend/views/team.php', 'includes/importers/',
+        'includes/importers/class-legacy-importer.php', 'includes/importers/index.php',
+        'includes/index.php', 'includes/services/', 'includes/services/class-combat-service.php',
+        'includes/services/class-discovery-service.php', 'includes/services/class-factions.php',
+        'includes/services/class-maintenance-service.php', 'includes/services/class-message-service.php',
+        'includes/services/class-pathfinder.php', 'includes/services/class-planet-service.php',
+        'includes/services/class-player-service.php', 'includes/services/class-port-service.php',
+        'includes/services/class-team-service.php', 'includes/services/class-universe-forge.php',
+        'includes/services/index.php', 'index.php', 'maintenance/', 'maintenance/README.md',
+        'maintenance/bootstrap.php', 'maintenance/daily_maintenance.php',
+        'maintenance/hourly_maintenance.php', 'maintenance/index.php', 'setup-bbs-on-wordpress.md', 'sql/',
+        'sql/index.php', 'sql/install-schema.php', 'uninstall.php',
+    ];
 
     /** Installed under a branch-named folder, which makes the next proper install a second copy. */
     private static function check_folder() {
