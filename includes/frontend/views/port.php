@@ -10,6 +10,7 @@ $port = IB_Ports::in_sector($p->sector_id);
     </div>
     <?php include IB_PATH . 'includes/frontend/views/_next-run.php'; ?>
     <?php $ib_panel_page = 'port'; include IB_PATH . 'includes/frontend/views/_computer-panel.php'; ?>
+    <?php include IB_PATH . 'includes/frontend/views/_where-to-buy.php'; ?>
 <?php return; endif;
 
 $docked = (int) $p->docked_port_id === (int) $port->id;
@@ -203,3 +204,4 @@ $class = (int) $port->port_class;
 include IB_PATH . 'includes/frontend/views/_next-run.php';
 $ib_panel_page = 'port';
 include IB_PATH . 'includes/frontend/views/_computer-panel.php';
+include IB_PATH . 'includes/frontend/views/_where-to-buy.php';

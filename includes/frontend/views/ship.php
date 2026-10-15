@@ -73,3 +73,4 @@ $cargo['colonists'] = 'Colonists';
 <?php
 /* The money a colony earns sits in its Vault; this is how it gets spent anywhere else. */
 include IB_PATH . 'includes/frontend/views/_remote-vault.php';
+include IB_PATH . 'includes/frontend/views/_where-to-buy.php';

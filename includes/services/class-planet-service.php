@@ -54,6 +54,14 @@ class IB_Planets {
         return $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . IB_DB::t('planets') . ' WHERE id = %d', $id));
     }
 
+    /** Aurelia Prime, where settlers are recruited. */
+    public static function crown_world() {
+        global $wpdb;
+        return $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM ' . IB_DB::t('planets') . ' WHERE planet_class = %s LIMIT 1', self::CROWN_WORLD
+        ));
+    }
+
     public static function in_sector($sector_id) {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . IB_DB::t('planets') . ' WHERE sector_id = %d ORDER BY id', $sector_id));

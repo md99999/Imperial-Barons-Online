@@ -38,6 +38,26 @@ class IB_Ports {
         return $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . IB_DB::t('ports') . ' WHERE id = %d', $id));
     }
 
+    /**
+     * The Crown's own ports, keyed 'armory' and 'drydock'. These are the only places hardware,
+     * charts, Worldseeds and ships are sold, which the "Where do I buy...?" table lists.
+     *
+     * @return array [key => port row], missing keys for whatever a universe lacks
+     */
+    public static function special_venues() {
+        global $wpdb;
+        $out = [];
+        $rows = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . IB_DB::t('ports') . ' WHERE port_class IN (%d, %d) ORDER BY sector_id',
+            self::ARMORY, self::SHIPYARD
+        ));
+        foreach ($rows as $port) {
+            $key = (int) $port->port_class === self::ARMORY ? 'armory' : 'drydock';
+            if (!isset($out[$key])) $out[$key] = $port;    // the nearest-numbered one, if ever duplicated
+        }
+        return $out;
+    }
+
     public static function is_trading_port($port) {
         return $port && (int) $port->port_class >= 1 && (int) $port->port_class <= 8;
     }

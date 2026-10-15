@@ -489,6 +489,15 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   it, and lets you draw credits on it from anywhere in the galaxy — no turn, less the **Remote Vault
   fee**, 2% by default — so the money a colony earns can be spent at whatever port you are standing
   in. Landing on the world itself still lets you deposit and withdraw with no fee at all.
+- **Where do I buy…?** The Ship page and the Port page both end with a table of everything the
+  Crown sells — colonists, cargo holds, fighters, shields, survey drones, nebula charts, Worldseeds
+  and ships — with the price, the port or planet that sells it, the sector, and how many warps away
+  it is, nearest supplier first. The supplier's name is the way there: clicking it flies the course
+  and docks, or lands, for Aurelia Prime. Hardware and charts come only from the Aurelian Armory and
+  the Imperial Drydock, ships and Worldseeds only from the Drydock, and settlers from the Armory or
+  the Crown World itself, which is obvious once you know and impossible to guess from the Sector
+  page. The turn column is the whole journey: if that is more than a day's turns, autopilot flies as
+  far as it reaches and stops.
 - **Visiting your worlds.** The Planet page lists every planet you own with the warps and turns to
   reach it and a **Fly & land** button, which flies the course and sets you down in one click; the
   sector number does the same. Landing is free, so the turns are purely the warps. Under it, a
