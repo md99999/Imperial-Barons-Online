@@ -322,6 +322,110 @@ class IB_Planets {
         return count($planets);
     }
 
+    /**
+     * Daily: the Crown's factors buy the staples off every colony that has a Vault to pay into.
+     *
+     * This is what makes a world you never visit worth owning. They pay below base price, set by
+     * "Auto-sale price", so carrying cargo to a port by hand still earns more; and they only deal
+     * with a planet that has a bastion, because the money goes into its Vault. Specialist goods
+     * are not grown on planets, so only ferrium ore, biostock and machinery are sold.
+     *
+     * @return array ['planets' => int, 'units' => int, 'credits' => int]
+     */
+    public static function sell_stock() {
+        global $wpdb;
+        $share = max(0, min(100, (int) IB_Settings::get('planet_autosell_percent')));
+        $rate = max(0, (int) IB_Settings::get('planet_autosell_price_percent'));
+        $out = ['planets' => 0, 'units' => 0, 'credits' => 0];
+        if (!$share || !$rate) return $out;
+
+        $t = IB_DB::t('planets');
+        $staples = IB_Game::commodities();
+        $rows = $wpdb->get_results("SELECT id, planet_name, sector_id, owner_player_id, ore, organics, equipment
+            FROM $t WHERE bastion_level >= 1 AND (ore > 0 OR organics > 0 OR equipment > 0)");
+        foreach ($rows as $planet) {
+            $sold = [];
+            $paid = 0;
+            foreach ($staples as $key) {
+                $stock = (int) $planet->$key;
+                if ($stock < 1) continue;
+                $units = (int) floor($stock * $share / 100);
+                if ($units < 1) continue;
+                $price = (int) floor(IB_Game::COMMODITIES[$key]['base'] * $rate / 100);
+                $sold[$key] = $units;
+                $paid += $units * $price;
+            }
+            if (!$sold || $paid < 1) continue;
+            $wpdb->query($wpdb->prepare(
+                "UPDATE $t SET ore = ore - %d, organics = organics - %d, equipment = equipment - %d,
+                 bastion_vault = bastion_vault + %d WHERE id = %d",
+                isset($sold['ore']) ? $sold['ore'] : 0,
+                isset($sold['organics']) ? $sold['organics'] : 0,
+                isset($sold['equipment']) ? $sold['equipment'] : 0,
+                $paid, $planet->id
+            ));
+            $out['planets']++;
+            $out['units'] += array_sum($sold);
+            $out['credits'] += $paid;
+        }
+        if ($out['credits'] > 0) {
+            IB_Log::news('autosell', sprintf(
+                "The Crown's factors paid %s credits into the vaults of %d world%s for %s units of cargo.",
+                IB_Game::fmt($out['credits']), $out['planets'], $out['planets'] === 1 ? '' : 's', IB_Game::fmt($out['units'])));
+        }
+        return $out;
+    }
+
+    /** What the factors pay for one unit, after the price setting. */
+    public static function autosell_price($commodity) {
+        if (!isset(IB_Game::COMMODITIES[$commodity])) return 0;
+        $rate = max(0, (int) IB_Settings::get('planet_autosell_price_percent'));
+        return (int) floor(IB_Game::COMMODITIES[$commodity]['base'] * $rate / 100);
+    }
+
+    /** The pilot's own worlds that hold a Vault, for the remote panel. */
+    public static function vaults_of($player_id) {
+        global $wpdb;
+        return $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . IB_DB::t('planets') . ' WHERE owner_player_id = %d AND bastion_level >= 1 ORDER BY sector_id',
+            $player_id
+        ));
+    }
+
+    /**
+     * Draws credits from one of the pilot's Vaults from anywhere in the galaxy. The Vault pays out
+     * the full amount; the pilot receives it less the transfer fee, which covers the Chancery's
+     * couriers. Free of turns, like every other transfer.
+     */
+    public static function draw($p, $planet_id, $amount) {
+        global $wpdb;
+        $planet = self::get($planet_id);
+        if (!$planet || (int) $planet->owner_player_id !== (int) $p->id) {
+            throw new IB_Game_Exception('That is not one of your worlds.');
+        }
+        if ((int) $planet->bastion_level < 1) throw new IB_Game_Exception('That world has no Vault.');
+        if (!is_numeric($amount) || (float) $amount > (float) PHP_INT_MAX) {
+            throw new IB_Game_Exception('Enter an amount the Vault actually holds.');
+        }
+        $amount = (int) $amount;
+        if ($amount <= 0) throw new IB_Game_Exception('Enter an amount greater than zero.');
+
+        $t = IB_DB::t('planets');
+        $ok = $wpdb->query($wpdb->prepare(
+            "UPDATE $t SET bastion_vault = bastion_vault - %d WHERE id = %d AND bastion_vault >= %d",
+            $amount, $planet->id, $amount
+        ));
+        if (!$ok) throw new IB_Game_Exception('The Vault does not hold that much.');
+
+        $fee = (int) ceil($amount * max(0, (int) IB_Settings::get('vault_transfer_fee_percent')) / 100);
+        $fee = min($fee, $amount);
+        IB_Player::add($p, ['credits' => $amount - $fee]);
+        return $fee > 0
+            ? sprintf('Drew %s credits from %s; %s went to the couriers, %s reached your account.',
+                IB_Game::fmt($amount), $planet->planet_name, IB_Game::fmt($fee), IB_Game::fmt($amount - $fee))
+            : sprintf('Drew %s credits from %s.', IB_Game::fmt($amount), $planet->planet_name);
+    }
+
     /** Daily: colonies grow 5% up to the planet's capacity. */
     public static function grow() {
         global $wpdb;

@@ -171,7 +171,7 @@ class IB_Health {
         'includes/frontend/class-ib-actions.php', 'includes/frontend/class-ib-shortcodes.php',
         'includes/frontend/class-ib-ui.php', 'includes/frontend/index.php', 'includes/frontend/views/',
         'includes/frontend/views/_computer-panel.php', 'includes/frontend/views/_how-to-play.php',
-        'includes/frontend/views/_nearby-ports.php', 'includes/frontend/views/_next-run.php',
+        'includes/frontend/views/_nearby-ports.php', 'includes/frontend/views/_next-run.php', 'includes/frontend/views/_remote-vault.php',
         'includes/frontend/views/_welcome.php', 'includes/frontend/views/computer.php',
         'includes/frontend/views/dashboard.php', 'includes/frontend/views/gazette.php',
         'includes/frontend/views/howto.php', 'includes/frontend/views/index.php',

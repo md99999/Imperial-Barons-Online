@@ -69,3 +69,7 @@ $cargo['colonists'] = 'Colonists';
     </table>
     <p class="ib-small ib-dim">Buy more holds at the Aurelian Armory or the Imperial Drydock. New ships are sold at the Imperial Drydock.</p>
 </div>
+
+<?php
+/* The money a colony earns sits in its Vault; this is how it gets spent anywhere else. */
+include IB_PATH . 'includes/frontend/views/_remote-vault.php';

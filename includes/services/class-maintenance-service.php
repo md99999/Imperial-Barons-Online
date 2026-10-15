@@ -223,11 +223,13 @@ class IB_Maintenance {
             (int) IB_Settings::get('turns_per_day'), $today, $today
         ));
         IB_Planets::grow();
+        $sale = IB_Planets::sell_stock();
         $cutoff = date('Y-m-d H:i:s', current_time('timestamp') - (int) IB_Settings::get('news_retention_days') * DAY_IN_SECONDS);
         $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('news') . ' WHERE created_at < %s', $cutoff));
         $mail_cutoff = date('Y-m-d H:i:s', current_time('timestamp') - 30 * DAY_IN_SECONDS);
         $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('messages') . ' WHERE is_read = 1 AND created_at < %s', $mail_cutoff));
         update_option('ib_last_daily', current_time('mysql'), false);
-        return 'Daily maintenance: turns reset, colonies grew, old news and mail purged.';
+        return sprintf('Daily maintenance: turns reset, colonies grew, the factors bought %s units from %d world(s) for %s credits, old news and mail purged.',
+            IB_Game::fmt($sale['units']), $sale['planets'], IB_Game::fmt($sale['credits']));
     }
 }

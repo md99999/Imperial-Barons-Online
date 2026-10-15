@@ -122,6 +122,29 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
             <tr><th>Colonists</th><td><?php echo IB_Game::fmt($planet->colonists); ?> / <?php echo IB_Game::fmt($def['max_colonists']); ?></td></tr>
             <tr><th>Bastion</th><td><?php echo $level ? 'Level ' . $level . ' - ' . esc_html(IB_Planets::BASTION[$level]['name']) : 'None'; ?></td></tr>
             <?php if ($friendly && $level) : ?><tr><th>Vault</th><td><?php echo IB_Game::fmt($planet->bastion_vault); ?> cr</td></tr><?php endif; ?>
+            <?php if ($friendly) :
+                $ib_share = max(0, min(100, (int) IB_Settings::get('planet_autosell_percent')));
+                $ib_rate = max(0, (int) IB_Settings::get('planet_autosell_price_percent')); ?>
+                <tr><th>Daily sale</th><td>
+                    <?php if (!$ib_share || !$ib_rate) : ?>
+                        <span class="ib-dim">The factors are not buying; stock piles up until you collect it.</span>
+                    <?php elseif (!$level) : ?>
+                        <span class="ib-dim">Build a bastion and the Crown's factors will buy
+                            <?php echo $ib_share; ?>% of this world's staples each day, paying into its Vault.</span>
+                    <?php else :
+                        $ib_due = 0;
+                        foreach (IB_Game::commodities() as $ib_key) {
+                            $ib_due += (int) floor((int) $planet->$ib_key * $ib_share / 100) * IB_Planets::autosell_price($ib_key);
+                        } ?>
+                        The factors buy <?php echo $ib_share; ?>% of the staples each day at
+                        <?php echo $ib_rate; ?>% of base price, paying into the Vault.
+                        <?php if ($ib_due > 0) : ?>
+                            <span class="ib-good">Today's stock would fetch <?php echo IB_Game::fmt($ib_due); ?> credits.</span>
+                        <?php endif; ?>
+                        <span class="ib-dim ib-small">A port pays full price or better, so collecting it yourself still earns more.</span>
+                    <?php endif; ?>
+                </td></tr>
+            <?php endif; ?>
             <?php $rates = IB_Planets::output_rates($planet); ?>
             <tr><th>Daily output per 1,000 colonists</th><td><?php printf('%s ferrium ore, %s biostock, %s machinery, %s fighters',
                     IB_Game::fmt(round($rates['ore'], 1)), IB_Game::fmt(round($rates['organics'], 1)),

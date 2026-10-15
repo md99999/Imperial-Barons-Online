@@ -20,7 +20,7 @@ $labels = [
     'forge' => 'Creation', 'bigbang' => 'Creation', 'new_player' => 'New pilot', 'destroyed' => 'Ship lost',
     'planet' => 'Planets', 'worldseed' => 'Worldseed', 'ship' => 'Shipyard', 'team' => 'Teams',
     'turns_spent' => 'Turns', 'discovery' => 'Frontier', 'promotion' => 'Promotion',
-    'trade' => 'Trade', 'bastion' => 'Bastion', 'combat' => 'Combat', 'explore' => 'Exploration',
+    'trade' => 'Trade', 'autosell' => 'Crown factors', 'bastion' => 'Bastion', 'combat' => 'Combat', 'explore' => 'Exploration',
 ];
 ?>
 <?php if ($compact) : ?>

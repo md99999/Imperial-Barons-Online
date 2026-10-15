@@ -117,6 +117,8 @@ class IB_Actions {
                 return [[IB_Planets::transfer($p, sanitize_key(self::field('what')), sanitize_key(self::field('dir')), self::int('qty'))], null];
             case 'build_bastion':
                 return [[IB_Planets::build_bastion($p)], null];
+            case 'vault_draw':
+                return [[IB_Planets::draw($p, self::int('planet_id'), self::int('amount'))], null];
             case 'vault':
                 return [[IB_Planets::vault($p, sanitize_key(self::field('dir')), self::int('amount'))], null];
             case 'rename_planet':

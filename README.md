@@ -466,14 +466,29 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   and dock in one go, use the Port finder, review every known port's prices, and check where your
   fighters are deployed. Pair two neighbouring ports with opposite classes (for example SBB and BSS)
   for a profitable run in both directions.
-- **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities and
-  fighters every hour, and a colony grows 5% a day by itself up to the planet's capacity. Output is
-  quoted per 1,000 colonists a day and scaled by the **Planet output** setting, 300% by default, with
-  a further 10% for every bastion level — so a fortified world repays the building, not just the
-  defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 90/150/60 + 30
-  at the default, and 144/240/96 + 48 behind a level 6 Sovereign Spire. A colony of a thousand
-  settlers makes 300 units of cargo a day, four loads for a 75-hold Freetrader, and planet stock has
-  no ceiling, so what you cannot carry today keeps until you come back.
+- **Planets.** Claim unowned worlds or grow new ones with Worldseeds. Colonists produce commodities
+  and fighters every hour, and a colony grows 5% a day by itself up to the planet's capacity. Output
+  is quoted per 1,000 colonists a day and scaled by the **Planet output** setting, 500% by default,
+  with a further 10% for every bastion level — so a fortified world repays the building, not just the
+  defending. A Verdant's base 30 ore / 50 biostock / 20 machinery / 10 fighters becomes 150/250/100 +
+  50 at the default, and 240/400/160 + 80 behind a level 6 Sovereign Spire. The Planet page shows the
+  rate for the world you are standing on, what it yields at its current size, and the base rate
+  behind it. Settlers travel in berths rather than one to a hold — 50 to a hold by default, so a
+  75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 — which is what makes founding a colony a
+  trip or two rather than a fortnight of shuttling. Set **Colonists per cargo hold** in Settings to
+  tune it. Bastions (levels 1–6) add a Vault, stronger defenses and a Lance Battery.
+- **The daily sale.** A colony produces far more than anyone can haul, so every night the Crown's
+  factors buy the staples — ferrium ore, biostock and machinery — off every world that has a bastion,
+  and pay into its Vault. They take **Daily auto-sale (% of stock)** of the stockpile, 100% by
+  default, at **Auto-sale price (% of base)**, 70% by default: a Verdant of 10,000 settlers banks
+  around 580,000 credits a day without anyone visiting it. They pay below base deliberately, because
+  a port pays full price and more when demand is high, so carrying cargo yourself still earns more
+  than letting the factors have it. A world with no bastion has no Vault to pay into, so its stock
+  simply piles up until you collect it; planet stock has no ceiling.
+- **The Remote Vault.** The Ship page lists every Vault you own, with its balance and the warps to
+  it, and lets you draw credits on it from anywhere in the galaxy — no turn, less the **Remote Vault
+  fee**, 2% by default — so the money a colony earns can be spent at whatever port you are standing
+  in. Landing on the world itself still lets you deposit and withdraw with no fee at all.
 - **Visiting your worlds.** The Planet page lists every planet you own with the warps and turns to
   reach it and a **Fly & land** button, which flies the course and sets you down in one click; the
   sector number does the same. Landing is free, so the turns are purely the warps. Under it, a
@@ -482,12 +497,7 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
 - **Route risk.** Both tables carry a **Risk** reading of the course ahead, from Quiet to Severe. It
   is built from how much of the route runs outside the Crown's Peace, how much of it you have never
   charted, and what is deployed along the way — but it never says what is waiting, whose it is or
-  how much of it there is. Sweep a sector or send a survey drone if you want to know before you fly. The Planet page shows the rate
-  for the world you are standing on, what it yields at its current size, and the base rate behind it. Settlers travel in berths rather than one to a
-  hold — 50 to a hold by default, so a 75-hold Freetrader carries 3,750 and a Pilgrim Ark 12,500 —
-  which is what makes founding a colony a trip or two rather than a fortnight of shuttling. Set
-  **Colonists per cargo hold** in Settings to tune it. Bastions (levels 1–6) add a vault, stronger
-  defenses and a Lance Battery.
+  how much of it there is. Sweep a sector or send a survey drone if you want to know before you fly.
 - **Danger.** The Imperial Core (sectors 1–10) is protected by the Crown's Peace. Beyond it roam the
   Vraxori Syndicate, Gorvath Clans, Reaver Pirates, Myrrak Swarm, Thaloruun Dominion and Zephryl
   Continuum, as well as rival Barons. If your ship is destroyed, you escape to Aurelia in a new
