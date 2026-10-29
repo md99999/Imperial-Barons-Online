@@ -30,6 +30,10 @@ class IB_Shortcodes {
     }
 
     public static function render($key, $atts = []) {
+        // register() only ever passes a key from IB_UI::PAGES, but this method is public, and the
+        // key reaches an include() below. Anything else is refused rather than concatenated into a
+        // path, so no caller - a theme, another plugin, a future mistake here - can widen it.
+        if (!is_string($key) || !isset(IB_UI::PAGES[$key])) return '';
         self::$atts = $atts;
         // Shortcodes can run in admin/REST contexts (block editor previews); keep those cheap.
         if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST)) {

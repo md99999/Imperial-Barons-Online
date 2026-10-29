@@ -135,16 +135,28 @@ class IB_Health {
 
     private static function scan_unexpected($dir, $prefix, $expected, &$found, $depth) {
         if ($depth > 8 || count($found) > 200) return;
-        $entries = @scandir($dir);
+        $real_dir = realpath($dir);
+        $entries = $real_dir === false ? false : @scandir($real_dir);
         if ($entries === false) return;
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
             if ($prefix === '' && $entry === '.git') continue;      // check_git() reports that one
-            $path = $dir . '/' . $entry;
+            $path = $real_dir . DIRECTORY_SEPARATOR . $entry;
             $rel = $prefix . $entry;
-            if (is_dir($path)) {
+
+            // Never walk through a link. A symlink or a Windows junction resolves somewhere other
+            // than where it sits, and following one would take the scan outside the plugin folder
+            // and could loop it back on itself; is_link() misses junctions, so the test is whether
+            // the path resolves to itself. Such a thing is reported, since a plugin folder has no
+            // business containing one, but it is never opened.
+            $real = realpath($path);
+            if ($real !== $path || is_link($path)) {
+                $found[] = $rel . (is_dir($path) ? '/' : '') . ' (link)';
+                continue;
+            }
+            if (is_dir($real)) {
                 if (!isset($expected[$rel . '/'])) { $found[] = $rel . '/'; continue; }
-                self::scan_unexpected($path, $rel . '/', $expected, $found, $depth + 1);
+                self::scan_unexpected($real, $rel . '/', $expected, $found, $depth + 1);
             } elseif (!isset($expected[$rel])) {
                 $found[] = $rel;
             }

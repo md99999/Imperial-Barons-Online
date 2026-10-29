@@ -99,6 +99,36 @@ sitting at exactly 2147483647. That probe found a real one: an oversized Vault d
 nothing, because the price overflowed to zero on the way to being charged. It is fixed, and the
 check that found it runs against every release.
 
+A later pass went looking for five specific weakness classes, and is re-run against each release:
+
+- **Missing authorization.** Two pilots, each with a fortified world, a fleet, a team and mail, in
+  different sectors; every action that names an object attempted against the other's object, and the
+  object inspected afterwards. 32 checks: drawing on another pilot's Vault, attacking or landing
+  across sector boundaries, recalling their fighters, taking their cargo, building or renaming their
+  world, using their Vault while standing on it, kicking from or disbanding a team you are not in,
+  deleting their mail, and trading or buying while not docked. All refused, nothing changed hands.
+  Seizing an *ungarrisoned* world is deliberately allowed, as the game's own rule, and the previous
+  owner is told; a garrisoned one is refused.
+- **Deserialization of untrusted data.** The plugin calls no deserialiser at all - no
+  `unserialize()`, no `maybe_unserialize()`, no `phar://`, and no `__wakeup()` or `__destruct()`
+  anywhere, so there is no object-injection gadget to reach. What it stores in options and
+  transients is scalars and arrays of scalars.
+- **Path traversal and include/require control.** There are exactly two dynamic `include`
+  statements. Both resolve a key against a fixed list - the admin screen map and the page map - and
+  the shortcode renderer now refuses a key that is not in that list before the path is built, since
+  it is a public method. Probed with traversal, encoded traversal, absolute paths, a null byte,
+  `php://filter`, `phar://` and a URL: all land on the default view or return nothing.
+- **Improper link resolution before file access.** The plugin writes, deletes and renames no files
+  at runtime; the only such calls live in the command-line build script, which refuses to run over
+  the web. The one place it reads the filesystem is the install health check, which now treats
+  anything that does not resolve to where it sits as a link: it reports it and never opens it.
+  `is_link()` alone is not enough, because a Windows junction reports false from both `is_link()`
+  and `is_dir()`.
+- **Score overflow.** Every scored column driven to its ceiling and beyond. The counters saturate
+  rather than wrap, so no score turns negative, ranks resolve at both extremes, net worth stays
+  positive (it becomes a float past 2^53, losing precision but not sign), every page that displays
+  a score still renders, and the daily job survives a maxed-out pilot.
+
 This is a hobby project, not an audited product, and a clean run of these checks is evidence rather
 than proof. Please still report anything you find.
 

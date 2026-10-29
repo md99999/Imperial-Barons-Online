@@ -349,8 +349,12 @@ class IB_Planets {
 
         $t = IB_DB::t('planets');
         $staples = IB_Game::commodities();
+        // Only worlds that belong to someone: the factors pay an owner's Vault, and an unclaimed
+        // world has nobody to pay. Without this, a world released by an administrator deleting its
+        // owner would go on banking credits for nobody until somebody happened to claim it.
         $rows = $wpdb->get_results("SELECT id, planet_name, sector_id, owner_player_id, ore, organics, equipment
-            FROM $t WHERE bastion_level >= 1 AND (ore > 0 OR organics > 0 OR equipment > 0)");
+            FROM $t WHERE bastion_level >= 1 AND owner_player_id > 0
+             AND (ore > 0 OR organics > 0 OR equipment > 0)");
         foreach ($rows as $planet) {
             $sold = [];
             $paid = 0;
