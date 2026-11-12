@@ -563,7 +563,7 @@ class IB_Planets {
                         fighters = GREATEST(0, fighters - %d) WHERE id = %d",
                 $from_fund, $from_vault, min(255, $short), $walked, $pl->id
             ));
-            $out['planets']++;
+            if ($stocked > 0) $out['planets']++;
             $out['deserted'] += $walked;
             if ($unserved > 0) {
                 $why = (int) $pl->vending_machines < $needed
