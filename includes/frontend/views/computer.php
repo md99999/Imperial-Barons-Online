@@ -3,7 +3,6 @@
 if (!defined('ABSPATH')) exit;
 global $wpdb;
 $here = (int) $p->sector_id;
-$target = isset($_GET['target']) && is_scalar($_GET['target']) ? absint($_GET['target']) : 0;
 $find = isset($_GET['find']) && is_string($_GET['find']) ? sanitize_key(wp_unslash($_GET['find'])) : '';
 $want = isset($_GET['want']) && $_GET['want'] === 'sell' ? 'sell' : 'buy';
 // Ports are known in every charted sector (visited, swept by sensors, or surveyed).
@@ -22,42 +21,7 @@ foreach ($wpdb->get_results('SELECT * FROM ' . IB_DB::t('ports')) as $port) {
 }
 usort($known_ports, function ($a, $b) { return $a->distance <=> $b->distance; });
 ?>
-<div class="ib-panel">
-    <h2>Ship's Computer</h2>
-    <?php echo IB_UI::get_form_open('computer'); ?>
-        <label>Plot course to sector <input type="number" name="target" min="1" value="<?php echo $target ?: ''; ?>" class="ib-num" required></label>
-        <button type="submit" class="ib-btn">Plot</button>
-    </form>
-
-    <?php if ($target) :
-        $path = IB_Pathfinder::shortestPath(null, $here, $target); ?>
-        <?php if (!$path) : ?>
-            <p class="ib-bad">No route to sector <?php echo $target; ?> could be found.</p>
-        <?php elseif (count($path) === 1) : ?>
-            <p>You are already in sector <?php echo $target; ?>.</p>
-        <?php else :
-            $hops = count($path) - 1; ?>
-            <p>Course: <?php echo $hops; ?> warp<?php echo $hops > 1 ? 's' : ''; ?>, <?php echo $hops * $move_cost; ?> turn(s).
-                You have <?php echo (int) $p->turns_remaining; ?>.</p>
-            <ol class="ib-path">
-                <?php foreach ($path as $sid) :
-                    $port = isset($explored[$sid]) ? IB_Ports::in_sector($sid) : null; ?>
-                    <li class="<?php echo $sid === $here ? 'ib-current' : ''; ?>">
-                        <?php echo $port ? IB_UI::fly_to($p, $sid, null, null, true) : (int) $sid; ?><?php echo isset($visited[$sid]) ? '' : '<span class="ib-dim">*</span>'; ?>
-                        <?php echo $port ? IB_UI::pattern($port) : ''; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ol>
-            <?php echo IB_UI::button('autopilot', 'Engage autopilot', ['target' => $target]); ?>
-            <?php if (IB_Ports::in_sector($target)) : ?>
-                <?php echo IB_UI::button('fly', 'Fly & dock', ['target' => $target, 'dock' => 1], 'ib-btn-alt'); ?>
-            <?php endif; ?>
-            <p class="ib-small ib-dim">Autopilot stops early if you run out of turns or meet trouble.
-                <strong>Fly &amp; dock</strong> does the same and docks at the port when you arrive,
-                for <?php echo (int) IB_Settings::get('dock_turn_cost'); ?> turn more. * = not yet visited.</p>
-        <?php endif; ?>
-    <?php endif; ?>
-</div>
+<?php $ib_panel_page = 'computer'; include IB_PATH . 'includes/frontend/views/_plot-course.php'; ?>
 
 <div class="ib-panel">
     <h3>Port finder</h3>
