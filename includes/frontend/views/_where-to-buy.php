@@ -91,7 +91,7 @@ if (!(int) $ib_s['vending_per_1000']) {
                         : IB_UI::fly_to($p, $ib_v['sector'], null, $ib_v['name'], true);
                     ?>
                     <tr<?php echo $ib_here ? ' class="ib-current"' : ''; ?>>
-                        <td><?php echo $ib_first ? esc_html($ib_item) : '<span class="ib-dim">&#8220;</span>'; ?></td>
+                        <td><?php echo $ib_first ? esc_html($ib_item) : '<span class="ib-dim">' . esc_html($ib_item) . '</span>'; ?></td>
                         <td class="ib-small"><?php echo $ib_first ? esc_html($ib_price) : ''; ?></td>
                         <td><?php echo $ib_link; ?>
                             <?php if ($ib_v['kind'] === 'planet') : ?><span class="ib-dim ib-small">(land)</span><?php endif; ?></td>
