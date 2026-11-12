@@ -21,6 +21,9 @@ $cargo['colonists'] = 'Colonists';
             <tr><th>Combat odds</th><td>Offense <?php echo esc_html($ship['off']); ?> &middot; Defense <?php echo esc_html($ship['def']); ?></td></tr>
             <tr><th>Worldseeds</th><td><?php echo (int) $p->worldseeds; ?></td></tr>
             <tr><th>Survey drones</th><td><?php echo (int) $p->survey_drones; ?> of <?php echo IB_Discovery::MAX_DRONES; ?></td></tr>
+            <?php if ((int) IB_Settings::get('vending_per_1000') > 0 || (int) $p->vending_machines > 0) : ?>
+            <tr><th>Vending machines</th><td><?php echo IB_Game::fmt($p->vending_machines); ?> <span class="ib-dim ib-small">crated, for your worlds' garrisons</span></td></tr>
+            <?php endif; ?>
             <tr><th>Credits</th><td><?php echo IB_Game::fmt($p->credits); ?></td></tr>
         </table>
         <?php echo IB_UI::form_open('rename_ship', 'ib-inline'); ?>

@@ -16,8 +16,29 @@ class IB_Installer {
     }
 
     public static function maybe_upgrade() {
+        $from = (int) get_option('ib_db_version');
         if (get_option('ib_db_version') !== IB_DB_VERSION) {
             self::install_schema();
+            self::migrate($from);
+        }
+    }
+
+    /** One-off data changes that go with a schema version. $from is the version being upgraded from. */
+    private static function migrate($from) {
+        global $wpdb;
+        // v5 brings vending machines for planet garrisons. Worlds that already hold fighters are given
+        // the machines they need, and a supply fund for a few days, once, so no garrison deserts on
+        // the day of the update and owners have time to find the new panel.
+        if ($from > 0 && $from < 5) {
+            $per = max(0, (int) IB_Settings::get('vending_per_1000'));
+            if ($per) {
+                $t = IB_DB::t('planets');
+                $wpdb->query($wpdb->prepare("UPDATE $t SET vending_machines = CEIL(fighters / 1000 * %d) WHERE owner_player_id > 0 AND fighters > 0 AND vending_machines = 0", $per));
+                $days = max(3, (int) IB_Settings::get('vending_warn_days'));
+                foreach ((array) $wpdb->get_results("SELECT * FROM $t WHERE owner_player_id > 0 AND fighters > 0 AND vending_fund = 0") as $pl) {
+                    $wpdb->update($t, ['vending_fund' => IB_Planets::vending_cost($pl) * $days], ['id' => $pl->id]);
+                }
+            }
         }
     }
 

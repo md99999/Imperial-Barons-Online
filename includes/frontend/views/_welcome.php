@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) exit;
 global $wpdb;
 $has_universe = IB_Game::universe_exists();
 ?>
+<?php if (!IB_Shortcodes::att('compact', false)) { $ib_logo_small = false; include IB_PATH . 'includes/frontend/views/_logo.php'; } ?>
 <div class="ib-panel">
     <h2>Welcome, would-be Baron</h2>
     <p>The Imperium has opened its frontier. From Aurelia, seat of the Imperial Throne, chartered traders set out to buy

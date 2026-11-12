@@ -485,12 +485,28 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   a port pays full price and more when demand is high, so carrying cargo yourself still earns more
   than letting the factors have it. A world with no bastion has no Vault to pay into, so its stock
   simply piles up until you collect it; planet stock has no ceiling.
+  Selling is the owner's choice, staple by staple and world by world: the Planet page has a **Keep
+  it** / **Sell it nightly** switch for each of the three, so a world can sell its biostock and keep
+  its ore for the next bastion or a run to a good port. Every world sells everything until its owner
+  says otherwise. **Sell it now** on the Planet page, or **Sell stock** in the Your planets list from
+  anywhere, calls the factors in at once on the same terms, for what the world is set to sell.
 - **The Remote Vault.** The Ship page lists every Vault you own, with its balance and the warps to
   it, and lets you draw credits on it from anywhere in the galaxy — no turn, less the **Remote Vault
   fee**, 2% by default — so the money a colony earns can be spent at whatever port you are standing
   in. Landing on the world itself still lets you deposit and withdraw with no fee at all.
+- **Vending machines.** A garrison marches on its stomach: every 1,000 fighters stationed on a world
+  need a stocked vending machine of rations and ale (500 credits at the Aurelian Armory or the
+  Imperial Drydock, carried crated in the ship's stores, up to 1,000, and left on the world with the
+  cargo transfer). Each machine in use costs 100 credits a day to restock, plus 10% per bastion
+  level, paid from the world's supply fund only by default; a setting lets the Vault pay too. Top a
+  fund up on the Planet page, or from anywhere with **Fund** in the Your planets list; owners get a
+  message when a fund drops below 3 days. A garrison only grows as far as its machines can feed, a
+  world short of machines raises no new fighters, and after a 3-day grace its unfed fighters desert,
+  5% a day. Only planet garrisons eat: fighters aboard ships and in deployed fleets are fed by the
+  Crown. Since a world with no fighters can be claimed by anyone, a garrison nobody feeds will in
+  time leave its world open. All of it is in Settings, and 0 machines per 1,000 turns it off.
 - **Where do I buy…?** The Ship page and the Port page both end with a table of everything the
-  Crown sells — colonists, cargo holds, fighters, shields, survey drones, nebula charts, Worldseeds
+  Crown sells — colonists, cargo holds, fighters, shields, survey drones, nebula charts, vending machines, Worldseeds
   and ships — with the price, the port or planet that sells it, the sector, and how many warps away
   it is, nearest supplier first. The supplier's name is the way there: clicking it flies the course
   and docks, or lands, for Aurelia Prime. Hardware and charts come only from the Aurelian Armory and

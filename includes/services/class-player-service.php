@@ -5,7 +5,7 @@ class IB_Player {
     /** Integer columns that may be changed with add(). */
     const COUNTERS = ['fighters', 'shield_points', 'cargo_holds', 'ore', 'organics', 'equipment',
                       'isotopes', 'medicine', 'luxuries', 'colonists',
-                      'worldseeds', 'survey_drones', 'credits', 'experience', 'alignment', 'turns_remaining', 'kills', 'deaths'];
+                      'worldseeds', 'survey_drones', 'vending_machines', 'credits', 'experience', 'alignment', 'turns_remaining', 'kills', 'deaths'];
 
     private static $current = false;
 
@@ -396,16 +396,19 @@ class IB_Player {
         $ship = self::ship($p);
         $worth = (int) $p->credits
             + $p->fighters * $s['price_fighter'] + $p->shield_points * $s['price_shield']
-            + (int) ($ship['price'] / 2) + $p->worldseeds * $s['price_worldseed'];
+            + (int) ($ship['price'] / 2) + $p->worldseeds * $s['price_worldseed']
+            + (int) $p->vending_machines * $s['price_vending'];
         foreach (IB_Game::COMMODITIES as $key => $def) $worth += (int) $p->$key * $def['base'];
         $planets = $wpdb->get_row($wpdb->prepare(
             'SELECT COALESCE(SUM(bastion_vault),0) cr, COALESCE(SUM(fighters),0) f, COALESCE(SUM(colonists),0) col,
-                    COALESCE(SUM(ore),0) o, COALESCE(SUM(organics),0) g, COALESCE(SUM(equipment),0) e
+                    COALESCE(SUM(ore),0) o, COALESCE(SUM(organics),0) g, COALESCE(SUM(equipment),0) e,
+                    COALESCE(SUM(vending_machines),0) vm, COALESCE(SUM(vending_fund),0) vf
              FROM ' . IB_DB::t('planets') . ' WHERE owner_player_id = %d', $p->id
         ));
         if ($planets) {
             $worth += $planets->cr + $planets->f * $s['price_fighter'] + $planets->col * $s['price_colonist']
-                + $planets->o * $c['ore']['base'] + $planets->g * $c['organics']['base'] + $planets->e * $c['equipment']['base'];
+                + $planets->o * $c['ore']['base'] + $planets->g * $c['organics']['base'] + $planets->e * $c['equipment']['base']
+                + $planets->vm * $s['price_vending'] + $planets->vf;
         }
         return $worth;
     }
@@ -416,7 +419,7 @@ class IB_Player {
         self::update($p, [
             'ship_type' => IB_Ships::DEFAULT_TYPE, 'cargo_holds' => $s['starting_holds'], 'fighters' => 0, 'shield_points' => 0,
             'ore' => 0, 'organics' => 0, 'equipment' => 0, 'isotopes' => 0, 'medicine' => 0, 'luxuries' => 0,
-            'colonists' => 0, 'worldseeds' => 0, 'survey_drones' => 0,
+            'colonists' => 0, 'worldseeds' => 0, 'survey_drones' => 0, 'vending_machines' => 0,
             'sector_id' => 1, 'prev_sector_id' => 0, 'docked_port_id' => 0, 'landed_planet_id' => 0,
             'turns_remaining' => 0, 'last_turn_reset' => IB_Game::today(),
         ]);

@@ -46,9 +46,14 @@ $ib_catalogue = [
     ['Shield points', sprintf('%s cr each', IB_Game::fmt($ib_s['price_shield'])), ['armory', 'drydock']],
     ['Survey drones', sprintf('%s cr each', IB_Game::fmt($ib_s['price_survey_drone'])), ['armory', 'drydock']],
     ['Nebula charts', sprintf('%s cr each', IB_Game::fmt($ib_s['price_nebula_chart'])), ['armory', 'drydock']],
+    ['Vending machines', sprintf('%s cr each, for planet garrisons', IB_Game::fmt($ib_s['price_vending'])), ['armory', 'drydock']],
     ['Worldseeds', sprintf('%s cr each', IB_Game::fmt($ib_s['price_worldseed'])), ['drydock']],
     ['A bigger ship', sprintf('%s to %s cr, less trade-in', IB_Game::fmt(min($ib_prices)), IB_Game::fmt(max($ib_prices))), ['drydock']],
 ];
+if (!(int) $ib_s['vending_per_1000']) {
+    // Vending machines switched off in Settings: nobody needs to know where they are sold.
+    $ib_catalogue = array_values(array_filter($ib_catalogue, function ($e) { return $e[0] !== 'Vending machines'; }));
+}
 ?>
 <div class="ib-panel">
     <h3>Where do I buy&hellip;?</h3>
@@ -86,7 +91,7 @@ $ib_catalogue = [
                         : IB_UI::fly_to($p, $ib_v['sector'], null, $ib_v['name'], true);
                     ?>
                     <tr<?php echo $ib_here ? ' class="ib-current"' : ''; ?>>
-                        <td><?php echo $ib_first ? esc_html($ib_item) : '<span class="ib-dim">&#8220;</span>'; ?></td>
+                        <td><?php echo $ib_first ? esc_html($ib_item) : '<span class="ib-dim">' . esc_html($ib_item) . '</span>'; ?></td>
                         <td class="ib-small"><?php echo $ib_first ? esc_html($ib_price) : ''; ?></td>
                         <td><?php echo $ib_link; ?>
                             <?php if ($ib_v['kind'] === 'planet') : ?><span class="ib-dim ib-small">(land)</span><?php endif; ?></td>

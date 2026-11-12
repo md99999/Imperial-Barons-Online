@@ -17,6 +17,8 @@ class IB_Ports {
     const ARMORY = 0;
     const SHIPYARD = 9;
     const MAX_WORLDSEEDS_CARRIED = 5;
+    /** Vending machines travel crated in the ship's stores, not its holds, up to this many. */
+    const MAX_VENDING_CARRIED = 1000;
 
     /** A single trade worth at least this many credits is reported in the Gazette. */
     const NEWSWORTHY_TRADE = 10000;
@@ -256,6 +258,10 @@ class IB_Ports {
             'shields'  => ['Shield points', $s['price_shield'], max(0, $ship['max_shields'] - $p->shield_points)],
             'drones'   => ['Survey drones', $s['price_survey_drone'], max(0, IB_Discovery::MAX_DRONES - $p->survey_drones)],
         ];
+        // Vending machines for planet garrisons, sold at both Crown ports while the rule is switched on.
+        if ((int) $s['vending_per_1000'] > 0) {
+            $items['vending'] = ['Vending machines', $s['price_vending'], max(0, self::MAX_VENDING_CARRIED - (int) $p->vending_machines)];
+        }
         if ((int) $port->port_class === self::SHIPYARD) {
             $items['worldseed'] = ['Worldseeds', $s['price_worldseed'], max(0, self::MAX_WORLDSEEDS_CARRIED - $p->worldseeds)];
         }
@@ -274,9 +280,17 @@ class IB_Ports {
 
         $cost = $item === 'holds' ? self::hold_cost($p->cargo_holds, $qty) : $unit * $qty;
         IB_Player::spend_credits($p, $cost);
-        $col = ['holds' => 'cargo_holds', 'fighters' => 'fighters', 'shields' => 'shield_points', 'worldseed' => 'worldseeds', 'drones' => 'survey_drones'][$item];
+        $col = ['holds' => 'cargo_holds', 'fighters' => 'fighters', 'shields' => 'shield_points', 'worldseed' => 'worldseeds', 'drones' => 'survey_drones', 'vending' => 'vending_machines'][$item];
         IB_Player::add($p, [$col => $qty]);
-        return sprintf('Purchased %s %s for %s credits.', IB_Game::fmt($qty), strtolower($label), IB_Game::fmt($cost));
+        $msg = sprintf('Purchased %s %s for %s credits.', IB_Game::fmt($qty), strtolower($label), IB_Game::fmt($cost));
+        if ($item === 'vending') {
+            $msg .= ' Land on one of your worlds and leave them there with the cargo transfer; each one feeds '
+                . IB_Game::fmt(1000 / max(1, (int) IB_Settings::get('vending_per_1000'))) . ' fighters of its garrison.';
+        } elseif ($item === 'worldseed' && (int) IB_Settings::get('vending_per_1000') > 0) {
+            $msg .= sprintf(' Remember the vending machines: every 1,000 fighters garrisoned on a world need %d, stocked with rations and ale. They are sold right here, %s credits each.',
+                (int) IB_Settings::get('vending_per_1000'), IB_Game::fmt(IB_Settings::get('price_vending')));
+        }
+        return $msg;
     }
 
     public static function trade_in_value($p) {

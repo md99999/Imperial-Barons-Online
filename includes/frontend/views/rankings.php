@@ -6,6 +6,7 @@ $tabs = ['networth' => 'Net Worth', 'experience' => 'Experience', 'kills' => 'Co
 $by = isset($_GET['by']) && is_string($_GET['by']) ? sanitize_key($_GET['by']) : '';
 if (!isset($tabs[$by])) $by = 'networth';
 ?>
+<?php if (!IB_Shortcodes::att('compact', false)) { $ib_logo_small = !empty($p); include IB_PATH . 'includes/frontend/views/_logo.php'; } ?>
 <div class="ib-panel">
     <h2>Rankings</h2>
     <nav class="ib-tabs" aria-label="Ranking type">

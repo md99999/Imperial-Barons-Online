@@ -53,6 +53,8 @@ $hostile_fleets = array_filter($fleets, function ($f) use ($p) { return !IB_Comb
         <?php if (!$can_move) : ?><span class="ib-bad">You are out of turns.</span><?php endif; ?></p>
 </div>
 
+<?php $ib_panel_page = 'sector'; include IB_PATH . 'includes/frontend/views/_plot-course.php'; ?>
+
 <div class="ib-panel">
     <h3>Sensor sweep</h3>
     <div class="ib-table-wrap">

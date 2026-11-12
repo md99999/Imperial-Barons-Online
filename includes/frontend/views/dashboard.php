@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) exit;
 global $wpdb;
 $news = IB_Messages::news(12);
 ?>
+<?php $ib_logo_small = !empty($p); include IB_PATH . 'includes/frontend/views/_logo.php'; ?>
 <?php if (!$p) : ?>
     <div class="ib-panel">
         <h2>Pilot Registration</h2>
