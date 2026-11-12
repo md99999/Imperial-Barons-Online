@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
 class IB_Planets {
     const CROWN_WORLD = 'C';
     const MAX_PER_SECTOR = 3;
-    const TRANSFERABLE = ['colonists', 'ore', 'organics', 'equipment', 'fighters'];
+    const TRANSFERABLE = ['colonists', 'ore', 'organics', 'equipment', 'fighters', 'vending_machines'];
 
     /**
      * Production is per 1,000 colonists per day, at the base rate. What a planet actually makes is
@@ -146,7 +146,15 @@ class IB_Planets {
         ));
     }
 
-    /** Move colonists, commodities or fighters between ship and planet. $dir is 'take' or 'leave'. */
+    /** How many more of $what the ship can take on. Vending machines are crated and stowed, not held. */
+    public static function ship_room($p, $what) {
+        if ($what === 'fighters') return (int) IB_Player::ship($p)['max_fighters'] - (int) $p->fighters;
+        if ($what === 'colonists') return IB_Player::colonist_room($p);
+        if ($what === 'vending_machines') return max(0, IB_Ports::MAX_VENDING_CARRIED - (int) $p->vending_machines);
+        return IB_Player::holds_free($p);
+    }
+
+    /** Move colonists, commodities, fighters or vending machines between ship and planet. $dir is 'take' or 'leave'. */
     public static function transfer($p, $what, $dir, $qty) {
         global $wpdb;
         if (!in_array($what, self::TRANSFERABLE, true)) throw new IB_Game_Exception('Invalid cargo type.');
@@ -157,9 +165,7 @@ class IB_Planets {
         $t = IB_DB::t('planets');
 
         if ($dir === 'take') {
-            $room = $what === 'fighters'
-                ? IB_Player::ship($p)['max_fighters'] - $p->fighters
-                : ($what === 'colonists' ? IB_Player::colonist_room($p) : IB_Player::holds_free($p));
+            $room = self::ship_room($p, $what);
             if ($qty > $room) throw new IB_Game_Exception(sprintf('Your ship only has room for %s more.', IB_Game::fmt(max(0, $room))));
             $ok = $wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what - %d WHERE id = %d AND $what >= %d", $qty, $planet->id, $qty));
             if (!$ok) throw new IB_Game_Exception('The planet does not have that many.');
@@ -314,12 +320,19 @@ class IB_Planets {
     public static function produce() {
         global $wpdb;
         $t = IB_DB::t('planets');
-        $planets = $wpdb->get_results("SELECT id, planet_class, colonists, bastion_level FROM $t WHERE colonists > 0 AND planet_class <> 'C'");
+        $per = max(0, (int) IB_Settings::get('vending_per_1000'));
+        $planets = $wpdb->get_results("SELECT id, planet_class, colonists, bastion_level, owner_player_id, fighters, vending_machines, vending_short_days FROM $t WHERE colonists > 0 AND planet_class <> 'C'");
         foreach ($planets as $pl) {
             $rates = self::output_rates($pl);
             $gain = [];
             foreach (['ore', 'organics', 'equipment', 'fighters'] as $k) {
                 $gain[$k] = self::random_round($pl->colonists / 1000 * $rates[$k] / 24);
+            }
+            // Vending machines: an owned world's garrison only grows as far as its machines can feed,
+            // and a world already short of stocked machines raises no new fighters at all.
+            if ($per && (int) $pl->owner_player_id > 0) {
+                $fed = (int) $pl->vending_short_days > 0 ? 0 : (int) floor((int) $pl->vending_machines * 1000 / $per);
+                $gain['fighters'] = max(0, min($gain['fighters'], $fed - (int) $pl->fighters));
             }
             if (array_sum($gain) === 0) continue;
             $wpdb->query($wpdb->prepare(
@@ -449,5 +462,136 @@ class IB_Planets {
                 $def['max_colonists'], $class
             ));
         }
+    }
+
+    /**
+     * Vending machines. A garrison needs feeding: an owned world needs vending_per_1000 machines (1 by
+     * default) for every 1,000 fighters stationed on it, each restocked every day for vending_restock
+     * credits (100), plus vending_bastion_percent (10%) per bastion level. Only planet garrisons eat:
+     * fighters aboard ships and in deployed fleets are fed by the Crown.
+     */
+    public static function vending_needed($planet) {
+        $per = max(0, (int) IB_Settings::get('vending_per_1000'));
+        if (!$per || (int) $planet->fighters <= 0) return 0;
+        return (int) ceil((int) $planet->fighters / 1000 * $per);
+    }
+
+    /** Restock for one machine on this world: the base rate, plus a share per bastion level. */
+    public static function vending_unit_cost($planet) {
+        $base = max(0, (int) IB_Settings::get('vending_restock'));
+        return (int) round($base * (1 + max(0, (int) IB_Settings::get('vending_bastion_percent')) / 100 * (int) $planet->bastion_level));
+    }
+
+    /** Daily restock bill: each machine in use, up to what the garrison needs. */
+    public static function vending_cost($planet) {
+        return min((int) $planet->vending_machines, self::vending_needed($planet)) * self::vending_unit_cost($planet);
+    }
+
+    /** Whole days of restocking the supply fund covers; null when nothing needs restocking. */
+    public static function vending_days_left($planet) {
+        $cost = self::vending_cost($planet);
+        return $cost > 0 ? (int) floor((int) $planet->vending_fund / $cost) : null;
+    }
+
+    /**
+     * Puts your own credits into a world's vending supply fund. Open to the owner and teammates, from
+     * the planet itself or, with $planet_id, from anywhere (the Your planets list).
+     */
+    public static function vending_contribute($p, $amount, $planet_id = 0) {
+        global $wpdb;
+        if ($planet_id) {
+            $planet = self::get($planet_id);
+            if (!$planet || !(int) $planet->owner_player_id || !self::is_friendly($p, $planet)) {
+                throw new IB_Game_Exception('That planet does not belong to you or your team.');
+            }
+        } else {
+            $planet = self::require_friendly($p);
+        }
+        $amount = (int) $amount;
+        if ($amount <= 0) throw new IB_Game_Exception('Enter an amount greater than zero.');
+        IB_Player::spend_credits($p, $amount);
+        $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('planets') . ' SET vending_fund = vending_fund + %d WHERE id = %d', $amount, $planet->id));
+        $cost = self::vending_cost($planet);
+        $fund = (int) $planet->vending_fund + $amount;
+        return sprintf('Added %s credits to the vending supply fund on %s (%s in the fund%s).', IB_Game::fmt($amount), $planet->planet_name,
+            IB_Game::fmt($fund), $cost ? sprintf(', about %s days of restocking', IB_Game::fmt(floor($fund / $cost))) : '');
+    }
+
+    /**
+     * Daily: restock every garrison's vending machines, paying from the world's supply fund and then,
+     * if the setting allows, its Vault. Fighters without a stocked machine leave the world short.
+     * After vending_grace_days short days in a row, vending_desert_percent of those fighters desert
+     * each day until it is fixed. A short world raises no new fighters. Owners are told either way.
+     *
+     * @return array ['planets' => worlds restocked, 'deserted' => fighters lost across the galaxy]
+     */
+    public static function vending_daily() {
+        global $wpdb;
+        $out = ['planets' => 0, 'deserted' => 0];
+        $per = max(0, (int) IB_Settings::get('vending_per_1000'));
+        if (!$per) return $out;
+        $vault_pays = (int) IB_Settings::get('vending_vault_pays') === 1;
+        $warn_days = max(0, (int) IB_Settings::get('vending_warn_days'));
+        $grace = max(0, (int) IB_Settings::get('vending_grace_days'));
+        $desert = max(0, min(50, (int) IB_Settings::get('vending_desert_percent'))) / 100;
+        $t = IB_DB::t('planets');
+        // Worlds that were short but have since lost their whole garrison are no longer short.
+        $wpdb->query("UPDATE $t SET vending_short_days = 0 WHERE fighters <= 0 AND vending_short_days > 0");
+        foreach ($wpdb->get_results("SELECT * FROM $t WHERE owner_player_id > 0 AND fighters > 0 AND planet_class <> 'C'") as $pl) {
+            $needed = self::vending_needed($pl);
+            $using = min((int) $pl->vending_machines, $needed);
+            $restock = self::vending_unit_cost($pl);
+            $bill = $using * $restock;
+            // Only whole machines are restocked, and only those are paid for: a fund that covers two
+            // and a half machines stocks two and keeps the change.
+            $fund = max(0, (int) $pl->vending_fund);
+            $available = $fund + ($vault_pays ? max(0, (int) $pl->bastion_vault) : 0);
+            $stocked = $restock > 0 ? min($using, (int) floor($available / $restock)) : $using;
+            $charge = $stocked * $restock;
+            $from_fund = min($fund, $charge);
+            $from_vault = $charge - $from_fund;
+            $served = (int) floor($stocked * 1000 / $per);
+            $unserved = max(0, (int) $pl->fighters - $served);
+            $short = $unserved > 0 ? (int) $pl->vending_short_days + 1 : 0;
+            $walked = 0;
+            if ($unserved > 0 && $short > $grace && $desert > 0) {
+                $walked = min($unserved, (int) ceil($unserved * $desert));
+            }
+            // Relative updates, so fighters lost or added since this row was read are not overwritten.
+            $wpdb->query($wpdb->prepare(
+                "UPDATE $t SET vending_fund = vending_fund - %d, bastion_vault = bastion_vault - %d, vending_short_days = %d,
+                        fighters = GREATEST(0, fighters - %d) WHERE id = %d",
+                $from_fund, $from_vault, min(255, $short), $walked, $pl->id
+            ));
+            $out['planets']++;
+            $out['deserted'] += $walked;
+            if ($unserved > 0) {
+                $why = (int) $pl->vending_machines < $needed
+                    ? sprintf('it has %s vending machines and its %s fighters need %s', IB_Game::fmt($pl->vending_machines), IB_Game::fmt($pl->fighters), IB_Game::fmt($needed))
+                    : ($vault_pays ? 'its supply fund and Vault could not pay the restock' : 'its supply fund ran out');
+                $when = $short >= $grace ? 'tomorrow' : sprintf('in %d days', $grace - $short + 1);
+                if ($walked) {
+                    IB_Messages::system((int) $pl->owner_player_id, 'Fighters deserted', sprintf(
+                        "%s fighters deserted %s in sector %d because %s.\n\nAssign more vending machines or add to its supply fund to stop it. A world with no fighters left can be claimed by anyone who lands.",
+                        IB_Game::fmt($walked), $pl->planet_name, $pl->sector_id, $why));
+                    IB_Log::news('vending', sprintf('%s hungry fighters deserted the garrison of %s in sector %d.',
+                        IB_Game::fmt($walked), $pl->planet_name, $pl->sector_id));
+                } else {
+                    IB_Messages::system((int) $pl->owner_player_id, 'Garrison going hungry', sprintf(
+                        "%s is short of stocked vending machines because %s. %s fighters are going hungry and will start to desert %s, and the world raises no new fighters until it is fixed.",
+                        $pl->planet_name, $why, IB_Game::fmt($unserved), $when));
+                }
+            }
+            // Low-fund warning, so the supply fund is a number worth watching. Sent once, the day it dips.
+            $fund_left = (int) $pl->vending_fund - $from_fund;
+            if (!$unserved && $warn_days && $bill > 0 && $fund_left < $bill * $warn_days && (int) $pl->vending_fund >= $bill * $warn_days) {
+                $days = (int) floor($fund_left / $bill);
+                IB_Messages::system((int) $pl->owner_player_id, 'Vending supply fund running low', sprintf(
+                    "%s's vending supply fund covers %s of restocking (%s credits a day)%s. Add to it on the Planet page.",
+                    $pl->planet_name, $days === 1 ? '1 day' : $days . ' days', IB_Game::fmt($bill),
+                    $vault_pays ? '; after that the Vault pays' : '; after that its fighters go hungry'));
+            }
+        }
+        return $out;
     }
 }

@@ -35,6 +35,16 @@ $fields = [
         'price_survey_drone' => ['Survey drone price', 'Charts every sector within 3 warps of where it is launched.'],
         'price_nebula_chart' => ['Nebula chart price', 'Charts every sector in one nebula.'],
     ],
+    'Vending machines' => [
+        'vending_per_1000' => ['Vending machines needed per 1,000 fighters', 'A world needs this many vending machines, kept stocked, for every 1,000 fighters in its garrison. Fighters aboard ships and in deployed fleets are not counted. 0 turns vending machines off.'],
+        'price_vending' => ['Vending machine price', 'Sold at the Aurelian Armory and the Imperial Drydock.'],
+        'vending_restock' => ['Restock (credits a day per machine)', 'Paid at daily maintenance for each machine in use, from the world\'s supply fund (and its Vault, if the setting below allows).'],
+        'vending_bastion_percent' => ['Restock rise per bastion level (%)', 'Each bastion level adds this much to a world\'s restock, so bigger strongholds cost more to keep. At most 100.'],
+        'vending_vault_pays' => ['Vault pays the restock', '1 = when the supply fund runs dry the Vault pays, 0 = only the supply fund pays, so owners have to keep it topped up.'],
+        'vending_warn_days' => ['Warn when the supply fund runs low (days)', 'Owners get a message when a world\'s supply fund drops below this many days of restocking. 0 = no warning.'],
+        'vending_grace_days' => ['Vending grace (days)', 'Days a world can go short of stocked machines before fighters start to desert. A short world raises no new fighters meanwhile.'],
+        'vending_desert_percent' => ['Fighters deserting a day (%)', 'Once the grace runs out, this share of the unfed fighters deserts every day until it is fixed. At most 50. A world left with no fighters can be claimed.'],
+    ],
     'Exploration' => [
         'discovery_chance' => ['Discovery chance %', 'Chance that a first visit to a sector outside the Imperial Core turns up salvage, a credit cache, abandoned fighters, a survey beacon or a pirate ambush.'],
     ],

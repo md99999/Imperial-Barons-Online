@@ -42,10 +42,11 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
         <?php else :
             // One search of the warp map answers "how far is each of my worlds?" for the whole table.
             $dist = IB_Pathfinder::distances(null, (int) $p->sector_id);
-            $move_cost = (int) IB_Settings::get('move_turn_cost'); ?>
+            $move_cost = (int) IB_Settings::get('move_turn_cost');
+            $ib_vend = (int) IB_Settings::get('vending_per_1000') > 0; ?>
             <div class="ib-table-wrap">
             <table class="ib-table">
-                <thead><tr><th>Planet</th><th>Sector</th><th>Warps</th><th>Turns</th><th>Risk</th><th>Colonists</th><th>Fighters</th><th>Bastion</th><th></th></tr></thead>
+                <thead><tr><th>Planet</th><th>Sector</th><th>Warps</th><th>Turns</th><th>Risk</th><th>Colonists</th><th>Fighters</th><?php if ($ib_vend) : ?><th>Vending</th><?php endif; ?><th>Bastion</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($mine as $pl) :
                     $here = (int) $pl->sector_id === (int) $p->sector_id;
@@ -64,6 +65,24 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                         <td><?php echo $risk ? IB_UI::risk_badge($risk) : '<span class="ib-dim">-</span>'; ?></td>
                         <td><?php echo IB_Game::fmt($pl->colonists); ?></td>
                         <td><?php echo IB_Game::fmt($pl->fighters); ?></td>
+                        <?php if ($ib_vend) :
+                            $ib_vn = IB_Planets::vending_needed($pl);
+                            $ib_vc = IB_Planets::vending_cost($pl);
+                            $ib_vd = IB_Planets::vending_days_left($pl);
+                            $ib_vw = (int) IB_Settings::get('vending_warn_days');
+                            $ib_bad = (int) $pl->vending_short_days > 0 || (int) $pl->vending_machines < $ib_vn; ?>
+                            <td><span class="<?php echo $ib_bad ? 'ib-bad' : 'ib-good'; ?>"><?php echo IB_Game::fmt($pl->vending_machines); ?> / <?php echo IB_Game::fmt($ib_vn); ?></span>
+                                <?php if ($ib_vd !== null) : ?>
+                                    <br><span class="ib-small <?php echo ($ib_vw && $ib_vd < $ib_vw) ? 'ib-bad' : 'ib-dim'; ?>"><?php echo $ib_vd === 1 ? '1 day' : IB_Game::fmt($ib_vd) . ' days'; ?> of fund</span>
+                                <?php endif; ?>
+                                <?php if ((int) $p->credits > 0) : ?>
+                                    <?php echo IB_UI::form_open('vending_fund', 'ib-inline'); ?>
+                                        <input type="hidden" name="planet_id" value="<?php echo (int) $pl->id; ?>">
+                                        <input type="number" name="amount" min="1" max="<?php echo (int) $p->credits; ?>" value="<?php echo (int) max(1, min((int) $p->credits, $ib_vc * 7)); ?>" class="ib-num" aria-label="Add to the supply fund of <?php echo esc_attr($pl->planet_name); ?>">
+                                        <button type="submit" class="ib-btn ib-btn-small">Fund</button>
+                                    </form>
+                                <?php endif; ?></td>
+                        <?php endif; ?>
                         <td><?php echo (int) $pl->bastion_level; ?></td>
                         <td><?php if ($here) {
                                 echo IB_UI::button('land', 'Land', ['planet_id' => $pl->id], 'ib-btn-small');
@@ -84,7 +103,10 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                 and so does the sector number. Autopilot stops early on hostile contact or when the turns run out.<br>
                 <strong>Risk</strong> is your navigator's reading of the course ahead &mdash; how much of it runs outside
                 the Crown's Peace, how much of it you have never charted, and what is deployed along the way. It will not
-                tell you what is out there: sweep a sector, or send a survey drone, if you want to know before you fly.</p>
+                tell you what is out there: sweep a sector, or send a survey drone, if you want to know before you fly.
+                <?php if ($ib_vend) : ?><br><strong>Vending</strong> is the machines on each world against what its garrison
+                    needs, and how many days its supply fund will restock them. <strong>Fund</strong> tops the fund up from
+                    anywhere (it suggests a week).<?php endif; ?></p>
         <?php endif; ?>
     </div>
 
@@ -181,9 +203,8 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
             <tbody>
             <?php foreach (IB_Planets::TRANSFERABLE as $what) :
                 // Offer what will actually fit, so the first click is not an error message.
-                $room = $what === 'fighters'
-                    ? max(0, (int) IB_Player::ship($p)['max_fighters'] - (int) $p->fighters)
-                    : ($what === 'colonists' ? IB_Player::colonist_room($p) : IB_Player::holds_free($p));
+                if ($what === 'vending_machines' && !(int) IB_Settings::get('vending_per_1000') && !(int) $planet->vending_machines && !(int) $p->vending_machines) continue;
+                $room = max(0, IB_Planets::ship_room($p, $what));
                 $take = max(1, min((int) $planet->$what, $room)); ?>
                 <tr>
                     <td><?php echo esc_html(IB_Game::label($what)); ?></td>
@@ -211,6 +232,51 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
         </table>
         </div>
     </div>
+
+    <?php if ((int) IB_Settings::get('vending_per_1000') > 0) :
+        $ib_per = (int) IB_Settings::get('vending_per_1000');
+        $ib_need = IB_Planets::vending_needed($planet);
+        $ib_have = (int) $planet->vending_machines;
+        $ib_cost = IB_Planets::vending_cost($planet);
+        $ib_fund = (int) $planet->vending_fund;
+        $ib_grace = (int) IB_Settings::get('vending_grace_days');
+        $ib_short = (int) $planet->vending_short_days;
+        $ib_vault_pays = (int) IB_Settings::get('vending_vault_pays') === 1;
+        $ib_days = IB_Planets::vending_days_left($planet);
+        $ib_warn = (int) IB_Settings::get('vending_warn_days');
+        $ib_feeds = (int) floor($ib_have * 1000 / $ib_per); ?>
+    <div class="ib-panel">
+        <h3>Vending machines</h3>
+        <p class="ib-small">A garrison marches on its stomach: every 1,000 fighters stationed here need <?php echo $ib_per; ?>
+            stocked vending machine<?php echo $ib_per === 1 ? '' : 's'; ?> of rations and ale. Buy machines at the Aurelian Armory
+            or the Imperial Drydock (<?php echo IB_Game::fmt(IB_Settings::get('price_vending')); ?> credits each) and leave them here
+            with the cargo transfer above. Each machine in use is restocked at daily maintenance for
+            <?php echo IB_Game::fmt(IB_Planets::vending_unit_cost($planet)); ?> credits<?php echo $level ? ' (more at higher bastion levels)' : ''; ?>,
+            paid from this world's supply fund<?php echo $ib_vault_pays ? ' and then its Vault' : ''; ?>.
+            A world short of stocked machines raises no new fighters, and after <?php echo $ib_grace; ?> day<?php echo $ib_grace === 1 ? '' : 's'; ?>
+            its hungry fighters start to desert. The garrison only grows as far as its machines can feed:
+            fighters aboard ships and in deployed fleets are fed by the Crown.</p>
+        <table class="ib-table ib-kv">
+            <tr><th>Machines</th><td><span class="<?php echo $ib_have < $ib_need ? 'ib-bad' : 'ib-good'; ?>"><?php echo IB_Game::fmt($ib_have); ?> here, <?php echo IB_Game::fmt($ib_need); ?> needed</span>
+                <span class="ib-small ib-dim">(enough for <?php echo IB_Game::fmt($ib_feeds); ?> fighters; <?php echo IB_Game::fmt($planet->fighters); ?> stationed)</span></td></tr>
+            <tr><th>Restock</th><td><?php echo IB_Game::fmt($ib_cost); ?> credits a day</td></tr>
+            <tr><th>Supply fund</th><td><?php echo IB_Game::fmt($ib_fund); ?> credits
+                <?php if ($ib_days !== null) : ?>
+                    <span class="<?php echo ($ib_warn && $ib_days < $ib_warn) ? 'ib-bad' : 'ib-dim'; ?>">(<?php echo $ib_days === 1 ? '1 day' : IB_Game::fmt($ib_days) . ' days'; ?> of restocking)</span>
+                <?php endif; ?></td></tr>
+            <?php if ($ib_short) : ?>
+                <tr><th>Status</th><td class="ib-bad">Short for <?php echo $ib_short; ?> day<?php echo $ib_short === 1 ? '' : 's'; ?>:
+                    <?php echo $ib_short > $ib_grace ? 'fighters are deserting every day.' : sprintf('fighters start to desert in %d day%s.', $ib_grace - $ib_short + 1, $ib_grace - $ib_short + 1 === 1 ? '' : 's'); ?></td></tr>
+            <?php endif; ?>
+        </table>
+        <?php if ((int) $p->credits > 0) : ?>
+            <?php echo IB_UI::form_open('vending_fund', 'ib-inline'); ?>
+                <input type="number" name="amount" min="1" max="<?php echo (int) $p->credits; ?>" value="<?php echo (int) max(1, min((int) $p->credits, $ib_cost * 7)); ?>" class="ib-num" aria-label="Add to the supply fund">
+                <button type="submit" class="ib-btn">Add to the supply fund</button>
+            </form>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <div class="ib-grid">
         <div class="ib-panel">

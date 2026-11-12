@@ -55,6 +55,14 @@ class IB_Settings {
             'planet_autosell_percent' => 100,
             'planet_autosell_price_percent' => 70,
             'vault_transfer_fee_percent' => 2,
+            'price_vending'        => 500,
+            'vending_per_1000'     => 1,
+            'vending_restock'      => 100,
+            'vending_bastion_percent' => 10,
+            'vending_vault_pays'   => 0,
+            'vending_warn_days'    => 3,
+            'vending_grace_days'   => 3,
+            'vending_desert_percent' => 5,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,
@@ -86,6 +94,10 @@ class IB_Settings {
                 : max(0, (int) $values[$key]);
         }
         $current['turns_per_day'] = max(1, $current['turns_per_day']);
+        // Vending: a switch, and two percentages with ceilings so a typo cannot empty every garrison.
+        $current['vending_vault_pays'] = min(1, (int) $current['vending_vault_pays']);
+        $current['vending_desert_percent'] = min(50, (int) $current['vending_desert_percent']);
+        $current['vending_bastion_percent'] = min(100, (int) $current['vending_bastion_percent']);
         update_option(self::OPTION, $current);
         return $current;
     }
