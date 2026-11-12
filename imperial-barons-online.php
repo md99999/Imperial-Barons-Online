@@ -35,7 +35,7 @@ define('IB_GAME_NAME', 'Imperial Barons Online');
 define('IB_GAZETTE_NAME', 'The Imperial Barons Gazette');
 define('IB_SOURCE_URL', 'https://github.com/md99999/Imperial-Barons-Online');
 define('IB_VERSION', '1.23.0');
-define('IB_DB_VERSION', '5');
+define('IB_DB_VERSION', '6');
 define('IB_FILE', __FILE__);
 define('IB_PATH', plugin_dir_path(__FILE__));
 define('IB_URL', plugin_dir_url(__FILE__));

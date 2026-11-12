@@ -349,49 +349,29 @@ class IB_Planets {
      * This is what makes a world you never visit worth owning. They pay below base price, set by
      * "Auto-sale price", so carrying cargo to a port by hand still earns more; and they only deal
      * with a planet that has a bastion, because the money goes into its Vault. Specialist goods
-     * are not grown on planets, so only ferrium ore, biostock and machinery are sold.
+     * are not grown on planets, so only ferrium ore, biostock and machinery are sold. An owner can
+     * keep any of the three back on a world (sell_ore, sell_organics, sell_equipment = 0), to haul
+     * to a port at full price or stockpile for the next bastion.
      *
      * @return array ['planets' => int, 'units' => int, 'credits' => int]
      */
     public static function sell_stock() {
         global $wpdb;
-        $share = max(0, min(100, (int) IB_Settings::get('planet_autosell_percent')));
-        $rate = max(0, (int) IB_Settings::get('planet_autosell_price_percent'));
         $out = ['planets' => 0, 'units' => 0, 'credits' => 0];
-        if (!$share || !$rate) return $out;
-
+        if (!self::factors_open()) return $out;
         $t = IB_DB::t('planets');
-        $staples = IB_Game::commodities();
         // Only worlds that belong to someone: the factors pay an owner's Vault, and an unclaimed
         // world has nobody to pay. Without this, a world released by an administrator deleting its
         // owner would go on banking credits for nobody until somebody happened to claim it.
-        $rows = $wpdb->get_results("SELECT id, planet_name, sector_id, owner_player_id, ore, organics, equipment
+        $rows = $wpdb->get_results("SELECT id, planet_name, sector_id, owner_player_id, ore, organics, equipment, sell_ore, sell_organics, sell_equipment
             FROM $t WHERE bastion_level >= 1 AND owner_player_id > 0
-             AND (ore > 0 OR organics > 0 OR equipment > 0)");
+             AND ((ore > 0 AND sell_ore = 1) OR (organics > 0 AND sell_organics = 1) OR (equipment > 0 AND sell_equipment = 1))");
         foreach ($rows as $planet) {
-            $sold = [];
-            $paid = 0;
-            foreach ($staples as $key) {
-                $stock = (int) $planet->$key;
-                if ($stock < 1) continue;
-                $units = (int) floor($stock * $share / 100);
-                if ($units < 1) continue;
-                $price = (int) floor(IB_Game::COMMODITIES[$key]['base'] * $rate / 100);
-                $sold[$key] = $units;
-                $paid += $units * $price;
-            }
-            if (!$sold || $paid < 1) continue;
-            $wpdb->query($wpdb->prepare(
-                "UPDATE $t SET ore = ore - %d, organics = organics - %d, equipment = equipment - %d,
-                 bastion_vault = bastion_vault + %d WHERE id = %d",
-                isset($sold['ore']) ? $sold['ore'] : 0,
-                isset($sold['organics']) ? $sold['organics'] : 0,
-                isset($sold['equipment']) ? $sold['equipment'] : 0,
-                $paid, $planet->id
-            ));
+            $sale = self::sell_to_factors($planet);
+            if (!$sale['credits']) continue;
             $out['planets']++;
-            $out['units'] += array_sum($sold);
-            $out['credits'] += $paid;
+            $out['units'] += $sale['units'];
+            $out['credits'] += $sale['credits'];
         }
         if ($out['credits'] > 0) {
             IB_Log::news('autosell', sprintf(
@@ -399,6 +379,86 @@ class IB_Planets {
                 IB_Game::fmt($out['credits']), $out['planets'], $out['planets'] === 1 ? '' : 's', IB_Game::fmt($out['units'])));
         }
         return $out;
+    }
+
+    /** Whether the factors are buying at all: both auto-sale settings above zero. */
+    public static function factors_open() {
+        return max(0, min(100, (int) IB_Settings::get('planet_autosell_percent'))) > 0
+            && max(0, (int) IB_Settings::get('planet_autosell_price_percent')) > 0;
+    }
+
+    /**
+     * One sale to the factors: "Daily auto-sale" percent of each staple on $planet that the owner
+     * sells, at the auto-sale price, paid into its Vault. The stock is only taken if it is still
+     * there, so a sale can never pay for cargo someone loaded onto a ship a moment earlier.
+     *
+     * @return array ['units' => int, 'credits' => int, 'sold' => [commodity => units]]
+     */
+    private static function sell_to_factors($planet) {
+        global $wpdb;
+        $none = ['units' => 0, 'credits' => 0, 'sold' => []];
+        $share = max(0, min(100, (int) IB_Settings::get('planet_autosell_percent')));
+        $sold = [];
+        $paid = 0;
+        foreach (IB_Game::commodities() as $key) {
+            if (!self::sells($planet, $key)) continue;
+            $units = (int) floor(max(0, (int) $planet->$key) * $share / 100);
+            $price = self::autosell_price($key);
+            if ($units < 1 || $price < 1) continue;
+            $sold[$key] = $units;
+            $paid += $units * $price;
+        }
+        if (!$sold || $paid < 1) return $none;
+        $o = isset($sold['ore']) ? $sold['ore'] : 0;
+        $g = isset($sold['organics']) ? $sold['organics'] : 0;
+        $e = isset($sold['equipment']) ? $sold['equipment'] : 0;
+        $ok = $wpdb->query($wpdb->prepare(
+            'UPDATE ' . IB_DB::t('planets') . " SET ore = ore - %d, organics = organics - %d, equipment = equipment - %d,
+             bastion_vault = bastion_vault + %d WHERE id = %d AND ore >= %d AND organics >= %d AND equipment >= %d",
+            $o, $g, $e, $paid, $planet->id, $o, $g, $e
+        ));
+        if (!$ok) return $none;
+        return ['units' => $o + $g + $e, 'credits' => $paid, 'sold' => $sold];
+    }
+
+    /**
+     * Sell now: the owner calls the factors in today rather than waiting for the night, from the
+     * world itself or, with $planet_id, from anywhere (the Your planets list). Same terms as the
+     * nightly sale, into the Vault, no turn, and it sells only what the world is set to sell.
+     */
+    public static function sell_now($p, $planet_id = 0) {
+        $planet = $planet_id ? self::get($planet_id) : self::require_landed($p);
+        if (!$planet || (int) $planet->owner_player_id !== (int) $p->id) throw new IB_Game_Exception('Only the owner can sell a world\'s stock to the factors.');
+        if (!self::factors_open()) throw new IB_Game_Exception('The Crown\'s factors are not buying at present.');
+        if ((int) $planet->bastion_level < 1) throw new IB_Game_Exception('The factors pay into a Vault: build a bastion on this world first.');
+        $sale = self::sell_to_factors($planet);
+        if (!$sale['credits']) throw new IB_Game_Exception(sprintf('%s has nothing it is set to sell: the factors only buy the staples you have not kept back.', $planet->planet_name));
+        $parts = [];
+        foreach ($sale['sold'] as $key => $units) $parts[] = IB_Game::fmt($units) . ' ' . strtolower(IB_Game::label($key));
+        return sprintf('The Crown\'s factors bought %s from %s and paid %s credits into its Vault.',
+            implode(', ', $parts), $planet->planet_name, IB_Game::fmt($sale['credits']));
+    }
+
+    /** Whether $planet lets the factors buy $commodity (one of the three staples). */
+    public static function sells($planet, $commodity) {
+        $col = 'sell_' . $commodity;
+        return in_array($commodity, IB_Game::commodities(), true) && (!isset($planet->$col) || (int) $planet->$col === 1);
+    }
+
+    /**
+     * The owner's choice, per world and per staple, of what the factors may buy. Kept back, a staple
+     * piles up for hauling to a port at full price or for the next bastion.
+     */
+    public static function set_factors($p, $commodity, $on, $planet_id = 0) {
+        global $wpdb;
+        if (!in_array($commodity, IB_Game::commodities(), true)) throw new IB_Game_Exception('The factors only deal in ferrium ore, biostock and machinery.');
+        $planet = $planet_id ? self::get($planet_id) : self::require_landed($p);
+        if (!$planet || (int) $planet->owner_player_id !== (int) $p->id) throw new IB_Game_Exception('Only the owner can choose what a world sells.');
+        $wpdb->update(IB_DB::t('planets'), ['sell_' . $commodity => $on ? 1 : 0], ['id' => $planet->id]);
+        $label = strtolower(IB_Game::label($commodity));
+        return $on
+            ? sprintf('%s now sells its %s to the Crown\'s factors every night, into its Vault.', $planet->planet_name, $label)
+            : sprintf('%s now keeps its %s: it piles up until you collect it or sell it yourself.', $planet->planet_name, $label);
     }
 
     /** What the factors pay for one unit, after the price setting. */

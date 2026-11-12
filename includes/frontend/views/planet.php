@@ -92,6 +92,12 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                                 echo '<span class="ib-small ib-dim">no charted route</span>';
                             } else {
                                 echo '<span class="ib-small ib-bad">not enough turns</span>';
+                            }
+                            // Selling to the factors needs no visit: they pay into the Vault wherever you are.
+                            if ((int) $pl->bastion_level >= 1 && (int) $pl->owner_player_id === (int) $p->id && IB_Planets::factors_open()) {
+                                $ib_stock = 0;
+                                foreach (IB_Game::commodities() as $ib_key) if (IB_Planets::sells($pl, $ib_key)) $ib_stock += (int) $pl->$ib_key;
+                                if ($ib_stock > 0) echo ' ' . IB_UI::button('sell_now', 'Sell stock', ['planet_id' => (int) $pl->id], 'ib-btn-small ib-btn-alt');
                             } ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -106,7 +112,9 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                 tell you what is out there: sweep a sector, or send a survey drone, if you want to know before you fly.
                 <?php if ($ib_vend) : ?><br><strong>Vending</strong> is the machines on each world against what its garrison
                     needs, and how many days its supply fund will restock them. <strong>Fund</strong> tops the fund up from
-                    anywhere (it suggests a week).<?php endif; ?></p>
+                    anywhere (it suggests a week).<?php endif; ?>
+                <br><strong>Sell stock</strong> calls the Crown's factors in now rather than tonight: they buy what that world
+                    is set to sell and pay into its Vault, from wherever you are. Choose what each world sells on its Planet page.</p>
         <?php endif; ?>
     </div>
 
@@ -155,15 +163,29 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                             <?php echo $ib_share; ?>% of this world's staples each day, paying into its Vault.</span>
                     <?php else :
                         $ib_due = 0;
+                        $ib_owner = (int) $planet->owner_player_id === (int) $p->id;
                         foreach (IB_Game::commodities() as $ib_key) {
+                            if (!IB_Planets::sells($planet, $ib_key)) continue;
                             $ib_due += (int) floor((int) $planet->$ib_key * $ib_share / 100) * IB_Planets::autosell_price($ib_key);
                         } ?>
-                        The factors buy <?php echo $ib_share; ?>% of the staples each day at
-                        <?php echo $ib_rate; ?>% of base price, paying into the Vault.
-                        <?php if ($ib_due > 0) : ?>
-                            <span class="ib-good">Today's stock would fetch <?php echo IB_Game::fmt($ib_due); ?> credits.</span>
-                        <?php endif; ?>
+                        The factors buy <?php echo $ib_share; ?>% of the staples you choose each night at
+                        <?php echo $ib_rate; ?>% of base price, paying into the Vault. Anything you keep piles up
+                        here for you to haul to a port or put into the next bastion.
                         <span class="ib-dim ib-small">A port pays full price or better, so collecting it yourself still earns more.</span>
+                        <div class="ib-small">
+                        <?php foreach (IB_Game::commodities() as $ib_key) :
+                            $ib_on = IB_Planets::sells($planet, $ib_key); ?>
+                            <div><?php echo esc_html(IB_Game::label($ib_key)); ?>:
+                                <?php echo $ib_on ? '<span class="ib-good">sold nightly</span>' : '<span class="ib-dim">kept</span>'; ?>
+                                (<?php echo IB_Game::fmt($planet->$ib_key); ?> here, <?php echo IB_Game::fmt(IB_Planets::autosell_price($ib_key)); ?> cr each to the factors)
+                                <?php if ($ib_owner) echo IB_UI::button('set_factors', $ib_on ? 'Keep it' : 'Sell it nightly', ['what' => $ib_key, 'on' => $ib_on ? 0 : 1], 'ib-btn-small ib-btn-alt'); ?>
+                            </div>
+                        <?php endforeach; ?>
+                        </div>
+                        <?php if ($ib_due > 0) : ?>
+                            <span class="ib-good">Today's stock you sell would fetch <?php echo IB_Game::fmt($ib_due); ?> credits.</span>
+                            <?php if ($ib_owner) echo IB_UI::button('sell_now', 'Sell it now', [], 'ib-btn-small'); ?>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </td></tr>
             <?php endif; ?>

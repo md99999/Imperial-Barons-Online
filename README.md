@@ -485,6 +485,11 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   a port pays full price and more when demand is high, so carrying cargo yourself still earns more
   than letting the factors have it. A world with no bastion has no Vault to pay into, so its stock
   simply piles up until you collect it; planet stock has no ceiling.
+  Selling is the owner's choice, staple by staple and world by world: the Planet page has a **Keep
+  it** / **Sell it nightly** switch for each of the three, so a world can sell its biostock and keep
+  its ore for the next bastion or a run to a good port. Every world sells everything until its owner
+  says otherwise. **Sell it now** on the Planet page, or **Sell stock** in the Your planets list from
+  anywhere, calls the factors in at once on the same terms, for what the world is set to sell.
 - **The Remote Vault.** The Ship page lists every Vault you own, with its balance and the warps to
   it, and lets you draw credits on it from anywhere in the galaxy — no turn, less the **Remote Vault
   fee**, 2% by default — so the money a colony earns can be spent at whatever port you are standing
