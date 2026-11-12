@@ -44,10 +44,13 @@ class IB_Shortcodes {
 
         ob_start();
 
-        // Compact is for a widget: the panel and nothing else. No game title, status bar, turn bar,
-        // navigation, notices or footer, whether or not the reader is signed in.
+        // Compact is for a widget: the logo and the panel, nothing else. No game title, status bar,
+        // turn bar, navigation, notices or footer, whether or not the reader is signed in.
         if (!empty($atts['compact'])) {
             echo '<div class="ib-game ib-page-' . esc_attr($key) . ' ib-compact">';
+            // The game logo heads every compact panel, sized to the column it sits in.
+            $ib_logo_small = true;
+            include IB_PATH . 'includes/frontend/views/_logo.php';
             $p = is_user_logged_in() ? IB_Player::current() : null;
             if (in_array($key, self::PUBLIC_PAGES, true) && IB_Game::universe_exists()) {
                 include IB_PATH . 'includes/frontend/views/' . ($key === 'dashboard' ? '_welcome' : $key) . '.php';

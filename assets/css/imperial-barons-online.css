@@ -48,6 +48,8 @@
   box-shadow: 0 0 18px rgba(232, 184, 74, .25);
 }
 .ib-game .ib-logo-small .ib-logo { width: min(300px, 100cqw); }
+/* In a compact widget the logo fills the column, up to the small size. */
+.ib-game.ib-compact .ib-logo-wrap { margin-bottom: 10px; }
 .ib-game .ib-logo img { display: block; width: 100%; height: 100%; max-width: none; }
 
 /*

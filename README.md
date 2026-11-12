@@ -189,8 +189,8 @@ The Gazette takes two attributes:
 | `limit` | 40 on a page, 10 when compact | how many dispatches to show, up to 200 |
 | `compact` | off | renders a plain list with no table, sized for a narrow column |
 
-In compact mode the output is the news panel alone: the masthead, the dispatches and a link to the
-full Gazette page. There is no game title, status bar, navigation or footer, whether or not the
+In compact mode the output is the game logo, sized to the column, and the news panel: the masthead,
+the dispatches and a link to the full Gazette page. There is no game title, status bar, navigation or footer, whether or not the
 reader is signed in, and it stays inside its column rather than widening as the game pages do.
 
 The other shortcodes work in widgets too, though most only make sense for a signed-in pilot.
@@ -536,7 +536,7 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   `IB_GAZETTE_NAME` constant in the plugin's main file.
 
   The feed can go anywhere with its shortcode, which takes two attributes. In compact mode the
-  output is the Gazette panel alone: no game title, status bar, navigation or footer, whether or
+  output is the game logo and the Gazette panel: no game title, status bar, navigation or footer, whether or
   not the reader is signed in.
 
   ```
