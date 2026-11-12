@@ -1,0 +1,156 @@
+"""
+Turns the ANSI block logo (the <pre> art in tools/logo-art.html, or another file holding it)
+into assets/img/ib-logo.svg, so the logo looks the same on every device instead of depending on
+each device's monospace font.
+
+The art is 60 x 30 character cells. Each cell becomes shapes in a 600 x 600 SVG (cells 10 x 20):
+block and half-block characters become rectangles, box-drawing characters become lines, and the few letters and
+digits become text. Colours come from the <i class="ib-..."> spans, matching the old CSS palette.
+
+    python tools/logo-to-svg.py [source.php]
+
+Re-run it after editing the <pre> art in tools/logo-art.html. Ported from Imperial Hackers.
+"""
+import html
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'tools', 'logo-art.html')
+OUT = os.path.join(ROOT, 'assets', 'img', 'ib-logo.svg')
+
+CW, CH = 10, 20  # cell size
+COLS, ROWS = 60, 30
+
+# class -> (colour, glow?)
+PALETTE = {
+    '': ('#1a2140', False),
+    'ib-brd': ('#e8b84a', True),      # gilt frame
+    'ib-ramp': ('#1d2f7a', False),
+    'ib-star': ('#cfd8ff', False),
+    'ib-shd': ('#2a1f55', False),
+    'ib-mid': ('#86bcff', True),      # IMPERIAL, Crown blue
+    'ib-gold': ('#ffc23a', True),     # BARONS and the Crown
+    'ib-red': ('#ff5c7a', True),      # ONLINE
+    'ib-planet': ('#3fb6a8', False),
+    'ib-ring': ('#c9a0ff', True),
+    'ib-gem': ('#ff4f6d', True),
+    'ib-hull': ('#b8c4d6', False),
+    'ib-eng': ('#4de8ff', True),
+    'ib-w1': ('#7dff7d', True),
+    'ib-w2': ('#4de8ff', True),
+    'ib-w3': ('#ff5c7a', True),
+    'ib-w4': ('#ffc23a', True),
+}
+
+SHADE = {'█': 1.0, '▓': 0.75, '▒': 0.5, '░': 0.25}
+HALF = {'▀': 0, '▄': 1}  # top or bottom half of the cell
+
+# Box drawing: which arms leave the centre (n, e, s, w), and single or double.
+SINGLE = {'─': 'ew', '│': 'ns', '┌': 'es', '┐': 'ws', '└': 'ne', '┘': 'nw',
+          '├': 'nse', '┤': 'nsw', '┬': 'ews', '┴': 'ewn', '┼': 'nesw'}
+DOUBLE = {'═': 'ew', '║': 'ns', '╔': 'es', '╗': 'ws', '╚': 'ne', '╝': 'nw',
+          '╠': 'nse', '╣': 'nsw', '╦': 'ews', '╩': 'ewn', '╬': 'nesw'}
+
+
+def cells(src):
+    s = open(src, encoding='utf-8').read()
+    pre = s[s.index('<pre'):s.index('</pre>')]
+    pre = pre[pre.index('>') + 1:]
+    out = []
+    pos = 0
+    for m in re.finditer(r'<i class="([^"]+)">(.*?)</i>', pre, re.S):
+        for ch in html.unescape(pre[pos:m.start()]):
+            out.append((ch, ''))
+        classes = m.group(1).split()
+        cls = next((c for c in reversed(classes) if c in PALETTE), '')
+        for ch in html.unescape(m.group(2)):
+            out.append((ch, cls))
+        pos = m.end()
+    for ch in html.unescape(pre[pos:]):
+        out.append((ch, ''))
+    grid, row = [], []
+    for ch, cls in out:
+        if ch == '\n':
+            grid.append(row)
+            row = []
+        else:
+            row.append((ch, cls))
+    if row:
+        grid.append(row)
+    return grid[:ROWS]
+
+
+def arms(x, y, spec, double):
+    cx, cy = x + CW / 2, y + CH / 2
+    ends = {'n': (cx, y), 's': (cx, y + CH), 'e': (x + CW, cy), 'w': (x, cy)}
+    segs = []
+    for a in spec:
+        ex, ey = ends[a]
+        if not double:
+            segs.append((cx, cy, ex, ey))
+        else:
+            d = 1.6
+            if a in 'ns':
+                segs += [(cx - d, cy, ex - d, ey), (cx + d, cy, ex + d, ey)]
+            else:
+                segs += [(cx, cy - d, ex, ey - d), (cx, cy + d, ex, ey + d)]
+    return segs
+
+
+def main():
+    grid = cells(SRC)
+    plain, glow = [], []
+    for r, row in enumerate(grid):
+        for c, (ch, cls) in enumerate(row[:COLS]):
+            if ch == ' ':
+                continue
+            x, y = c * CW, r * CH
+            colour, glows = PALETTE.get(cls, PALETTE[''])
+            bucket = glow if glows else plain
+            if ch in SHADE:
+                bucket.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s" fill-opacity="%.2f"/>'
+                              % (x, y, CW, CH, colour, SHADE[ch]))
+            elif ch in HALF:
+                bucket.append('<rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>'
+                              % (x, y + HALF[ch] * CH / 2, CW, CH / 2, colour))
+            elif ch in SINGLE or ch in DOUBLE:
+                double = ch in DOUBLE
+                for x1, y1, x2, y2 in arms(x, y, SINGLE.get(ch) or DOUBLE[ch], double):
+                    bucket.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="%s"/>'
+                                  % (x1, y1, x2, y2, colour, '1' if double else '1.4'))
+            else:
+                bucket.append('<text x="%.1f" y="%.1f" fill="%s">%s</text>'
+                              % (x + CW / 2, y + CH * 0.72, colour, html.escape(ch)))
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600" role="img" aria-label="Imperial Barons Online">
+<!-- Generated by tools/logo-to-svg.py from the ANSI art in tools/logo-art.html. -->
+<defs>
+  <radialGradient id="g1" cx="20%%" cy="15%%" r="70%%"><stop offset="0" stop-color="#3a2a8c" stop-opacity=".55"/><stop offset=".6" stop-color="#05030c" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g2" cx="85%%" cy="90%%" r="65%%"><stop offset="0" stop-color="#8c5a00" stop-opacity=".35"/><stop offset=".6" stop-color="#05030c" stop-opacity="0"/></radialGradient>
+  <radialGradient id="g3" cx="50%%" cy="10%%" r="100%%"><stop offset="0" stop-color="#101a3a"/><stop offset=".48" stop-color="#070b1a"/><stop offset="1" stop-color="#020308"/></radialGradient>
+  <radialGradient id="vig" cx="50%%" cy="45%%" r="75%%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></radialGradient>
+  <pattern id="scan" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="1" fill="#000" fill-opacity=".25"/></pattern>
+  <filter id="glow" x="-10%%" y="-10%%" width="120%%" height="120%%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="600" height="600" fill="url(#g3)"/>
+<rect width="600" height="600" fill="url(#g1)"/>
+<rect width="600" height="600" fill="url(#g2)"/>
+<g font-family="Consolas, 'DejaVu Sans Mono', Menlo, monospace" font-size="16" font-weight="700" text-anchor="middle" shape-rendering="crispEdges">
+%s
+</g>
+<g font-family="Consolas, 'DejaVu Sans Mono', Menlo, monospace" font-size="16" font-weight="700" text-anchor="middle" filter="url(#glow)">
+%s
+</g>
+<rect width="600" height="600" fill="url(#scan)"/>
+<rect width="600" height="600" fill="url(#vig)"/>
+</svg>
+''' % ('\n'.join(plain), '\n'.join(glow))
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(svg)
+    print('wrote %s: %d shapes, %d bytes' % (OUT, len(plain) + len(glow), len(svg)))
+
+
+if __name__ == '__main__':
+    main()

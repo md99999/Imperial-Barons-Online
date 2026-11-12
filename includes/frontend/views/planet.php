@@ -75,7 +75,7 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                                 <?php if ($ib_vd !== null) : ?>
                                     <br><span class="ib-small <?php echo ($ib_vw && $ib_vd < $ib_vw) ? 'ib-bad' : 'ib-dim'; ?>"><?php echo $ib_vd === 1 ? '1 day' : IB_Game::fmt($ib_vd) . ' days'; ?> of fund</span>
                                 <?php endif; ?>
-                                <?php if ((int) $p->credits > 0) : ?>
+                                <?php if ((int) $p->credits > 0 && $ib_vc > 0) : ?>
                                     <?php echo IB_UI::form_open('vending_fund', 'ib-inline'); ?>
                                         <input type="hidden" name="planet_id" value="<?php echo (int) $pl->id; ?>">
                                         <input type="number" name="amount" min="1" max="<?php echo (int) $p->credits; ?>" value="<?php echo (int) max(1, min((int) $p->credits, $ib_vc * 7)); ?>" class="ib-num" aria-label="Add to the supply fund of <?php echo esc_attr($pl->planet_name); ?>">
@@ -182,7 +182,7 @@ if ($planet && (int) $planet->sector_id !== (int) $p->sector_id) $planet = null;
                             </div>
                         <?php endforeach; ?>
                         </div>
-                        <?php if ($ib_due > 0) : ?>
+                        <?php if ($ib_due > 0 && $ib_owner) : ?>
                             <span class="ib-good">Today's stock you sell would fetch <?php echo IB_Game::fmt($ib_due); ?> credits.</span>
                             <?php if ($ib_owner) echo IB_UI::button('sell_now', 'Sell it now', [], 'ib-btn-small'); ?>
                         <?php endif; ?>
