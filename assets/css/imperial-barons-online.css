@@ -92,6 +92,7 @@
 .ib-game.ib-game .ib-dim { color: var(--ib-dim); }
 .ib-game.ib-game .ib-good { color: var(--ib-green); }
 .ib-game.ib-game .ib-bad { color: var(--ib-red); }
+.ib-game.ib-game .ib-warn { color: var(--ib-magenta); }
 .ib-game.ib-game .ib-buy { color: var(--ib-green); }
 .ib-game.ib-game .ib-sell { color: var(--ib-cyan); }
 .ib-game.ib-game .ib-special { color: var(--ib-magenta); font-weight: bold; }

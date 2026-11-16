@@ -64,11 +64,13 @@ class IB_Universe_Forge {
             if ($id > $fed && ($home === 0 || $d > $dist[$home])) $home = $id;
         }
         $fleets = IB_Factions::seed($open, $home, $graph, (int) $o['faction_strength']);
+        // Last, so adding dens leaves every earlier part of a seeded universe unchanged.
+        $dens = IB_Ports::mark_smugglers();
 
         IB_Pathfinder::flush();
         $summary = [
             'seed' => $seed, 'sectors' => $n, 'core' => $fed, 'warps' => $warp_count, 'one_way' => $one_way,
-            'ports' => $ports, 'specialist_ports' => $this->specialist_ports, 'planets' => $planets, 'fleets' => $fleets, 'drydock' => $drydock,
+            'ports' => $ports, 'specialist_ports' => $this->specialist_ports, 'smuggler_ports' => $dens, 'planets' => $planets, 'fleets' => $fleets, 'drydock' => $drydock,
             'vraxori_home' => $home, 'generated_at' => current_time('mysql'),
             'seconds' => round(microtime(true) - $started, 1),
         ];

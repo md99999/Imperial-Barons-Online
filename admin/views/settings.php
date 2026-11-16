@@ -45,6 +45,15 @@ $fields = [
         'vending_grace_days' => ['Vending grace (days)', 'Days a world can go short of stocked machines before fighters start to desert. A short world raises no new fighters meanwhile.'],
         'vending_desert_percent' => ['Fighters deserting a day (%)', 'Once the grace runs out, this share of the unfed fighters deserts every day until it is fixed. At most 50. A world left with no fighters can be claimed.'],
     ],
+    'Smugglers' => [
+        'smuggler_ports_percent' => ['Smugglers\' dens (% of frontier ports)', 'Share of trading ports outside the Imperial Core that are dens, where goods are stolen instead of bought. Applied at the next Universe Forge (an existing universe was given its dens once, on update). At most 50.'],
+        'smuggler_discount_percent' => ['Den discount (% under market)', 'How far under the market price a den\'s goods cost to steal. Never less than 50, at most 90. No haggling at a den.'],
+        'smuggler_haul_percent' => ['Haul per visit (% of holds)', 'How much a pilot can carry off from one docking at a den, as a share of their cargo holds. Docking again costs a turn and risks customs again.'],
+        'smuggler_catch_percent' => ['Customs catch chance (%)', 'Chance Imperial customs catches a pilot docking at a den. Caught pilots are fined and turned away. At most 80.'],
+        'smuggler_free_visits' => ['Free dockings a day', 'Dockings at the same den in 24 hours before the catch chance starts to climb.'],
+        'smuggler_repeat_step' => ['Catch rise per extra docking (%)', 'Added to the catch chance for each docking at the same den past the free ones. The total never passes 80%.'],
+        'smuggler_fine_percent' => ['Customs fine (% of credits carried)', 'Taken from a caught pilot\'s credits, at least 25 credits. At most 50.'],
+    ],
     'Exploration' => [
         'discovery_chance' => ['Discovery chance %', 'Chance that a first visit to a sector outside the Imperial Core turns up salvage, a credit cache, abandoned fighters, a survey beacon or a pirate ambush.'],
     ],

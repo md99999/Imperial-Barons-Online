@@ -64,6 +64,55 @@ class IB_Ports {
         return $port && (int) $port->port_class >= 1 && (int) $port->port_class <= 8;
     }
 
+    /**
+     * A smugglers' den: a frontier trading port where whatever it sells can be stolen off the
+     * docks for a fraction of the market price, if customs doesn't catch you docking.
+     */
+    public static function is_smuggler($port) {
+        return self::is_trading_port($port) && !empty($port->is_smuggler);
+    }
+
+    /** How far under market a den's goods go, in percent. Never less than 50. */
+    public static function smuggler_discount() {
+        return max(50, min(90, (int) IB_Settings::get('smuggler_discount_percent')));
+    }
+
+    /** Units a pilot may carry off from one den visit: a share of their holds. */
+    public static function smuggler_haul($p) {
+        $pct = max(1, min(100, (int) IB_Settings::get('smuggler_haul_percent')));
+        return max(1, (int) floor((int) $p->cargo_holds * $pct / 100));
+    }
+
+    /**
+     * Records a docking at a den and returns how many this pilot has made there in the last
+     * 24 hours, this one included. Kept in a transient per pilot and den.
+     */
+    public static function record_visit($p, $port) {
+        $key = 'ib_den_' . (int) $p->id . '_' . (int) $port->id;
+        $now = time();
+        $list = array_values(array_filter((array) get_transient($key), function ($t) use ($now) {
+            return is_int($t) && $t > $now - DAY_IN_SECONDS;
+        }));
+        $list[] = $now;
+        set_transient($key, $list, DAY_IN_SECONDS);
+        return count($list);
+    }
+
+    /** Dockings at this den in the last 24 hours, for the page. */
+    public static function recent_visits($p, $port) {
+        $now = time();
+        return count(array_filter((array) get_transient('ib_den_' . (int) $p->id . '_' . (int) $port->id), function ($t) use ($now) {
+            return is_int($t) && $t > $now - DAY_IN_SECONDS;
+        }));
+    }
+
+    /** Percent chance customs catches this pilot on their next docking at the den. */
+    public static function catch_chance($visits_before) {
+        $over = max(0, (int) $visits_before + 1 - (int) IB_Settings::get('smuggler_free_visits'));
+        $chance = (int) IB_Settings::get('smuggler_catch_percent') + $over * max(0, (int) IB_Settings::get('smuggler_repeat_step'));
+        return max(0, min(80, $chance));
+    }
+
     /** The specialist good this port deals in, or '' for none. */
     public static function specialty($port) {
         $key = ($port && isset($port->spec_commodity)) ? (string) $port->spec_commodity : '';
@@ -109,14 +158,24 @@ class IB_Ports {
      * Specialist goods carry a higher 'vol', so their prices swing further either way.
      */
     public static function price($port, $commodity) {
+        // At a den, what it "sells" is stolen: the cost effort is well under market. Rounded
+        // down, so it is never less of a discount than the setting promises.
+        if (self::mode($port, $commodity) === 'selling' && self::is_smuggler($port)) {
+            return max(1, (int) floor(self::market_price($port, $commodity) * (100 - self::smuggler_discount()) / 100));
+        }
+        return self::market_price($port, $commodity);
+    }
+
+    /** The price an honest port with the same stock would ask or pay. */
+    public static function market_price($port, $commodity) {
         $c = IB_Game::COMMODITIES[$commodity];
         $max = self::max($port, $commodity);
         $ratio = $max > 0 ? self::qty($port, $commodity) / $max : 0;
         $vol = isset($c['vol']) ? (float) $c['vol'] : 1.0;
-        $deviation = self::mode($port, $commodity) === 'selling'
-            ? 0.25 - 0.35 * $ratio
-            : -0.25 + 0.45 * $ratio;
-        return max(1, (int) round($c['base'] * (1 + $vol * $deviation)));
+        $selling = self::mode($port, $commodity) === 'selling';
+        $deviation = $selling ? 0.25 - 0.35 * $ratio : -0.25 + 0.45 * $ratio;
+        $price = $c['base'] * (1 + $vol * $deviation);
+        return max(1, (int) round($price));
     }
 
     public static function dock($p) {
@@ -124,8 +183,83 @@ class IB_Ports {
         if (!$port) throw new IB_Game_Exception('There is no port in this sector.');
         if ((int) $p->docked_port_id === (int) $port->id) return $port;
         IB_Player::spend_turns($p, (int) IB_Settings::get('dock_turn_cost'));
-        IB_Player::update($p, ['docked_port_id' => $port->id, 'landed_planet_id' => 0]);
+        if (self::is_smuggler($port)) self::customs($p, $port);
+        $data = ['docked_port_id' => $port->id, 'landed_planet_id' => 0];
+        if (self::is_smuggler($port)) $data['smuggle_left'] = self::smuggler_haul($p);
+        IB_Player::update($p, $data);
         return $port;
+    }
+
+    const DEN_KINDS = ["Smugglers' Den", 'Black Market', 'Pirate Haven', "Thieves' Wharf", 'Shadow Bazaar'];
+
+    /**
+     * Turns a share of the frontier's trading ports into smugglers' dens and renames them to
+     * match. Only ports outside the Core that sell at least one good qualify. Uses mt_rand, so a
+     * seeded Universe Forge run marks the same dens every time.
+     *
+     * @return int dens marked
+     */
+    public static function mark_smugglers() {
+        global $wpdb;
+        $pct = max(0, min(50, (int) IB_Settings::get('smuggler_ports_percent')));
+        if ($pct <= 0) return 0;
+        $ports = IB_DB::t('ports');
+        $rows = $wpdb->get_results(
+            "SELECT p.id, p.port_name, p.port_class, p.spec_mode FROM $ports p JOIN " . IB_DB::t('sectors') . ' s ON s.id = p.sector_id' .
+            ' WHERE s.is_core = 0 AND p.port_class BETWEEN 1 AND 8 AND p.is_smuggler = 0 ORDER BY p.id'
+        );
+        $candidates = array_values(array_filter((array) $rows, function ($r) {
+            return (int) $r->port_class !== 8 || $r->spec_mode === 'S';    // a den must have something to steal
+        }));
+        $count = (int) round(count($candidates) * $pct / 100);
+        if ($count <= 0) return 0;
+        for ($i = count($candidates) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            $tmp = $candidates[$i]; $candidates[$i] = $candidates[$j]; $candidates[$j] = $tmp;
+        }
+        foreach (array_slice($candidates, 0, $count) as $r) {
+            $place = strtok((string) $r->port_name, ' ');
+            $name = ($place !== false ? $place . ' ' : '') . self::DEN_KINDS[mt_rand(0, count(self::DEN_KINDS) - 1)];
+            $wpdb->update($ports, ['is_smuggler' => 1, 'port_name' => $name], ['id' => $r->id]);
+        }
+        return $count;
+    }
+
+    /** What a pilot is told on docking; at a den, that they got past customs and how much they can carry off. */
+    public static function docked_message($p, $port) {
+        if (!self::is_smuggler($port)) return sprintf('Docked at %s.', $port->port_name);
+        return sprintf('You slip past Imperial customs and tie up at %s. You can carry off up to %s units this visit.',
+            $port->port_name, IB_Game::fmt((int) $p->smuggle_left));
+    }
+
+    /**
+     * Imperial customs watches the dens. Each docking risks being caught: the pilot is fined a
+     * share of the credits they carry and turned away without docking. Every docking past the
+     * free ones in a day makes it likelier. Throws when caught.
+     */
+    private static function customs($p, $port) {
+        $chance = self::catch_chance(self::recent_visits($p, $port));
+        self::record_visit($p, $port);
+        if (mt_rand(1, 100) > $chance) return;
+
+        $credits = max(0, (int) $p->credits);
+        $fine = min($credits, max(25, (int) floor($credits * max(0, (int) IB_Settings::get('smuggler_fine_percent')) / 100)));
+        if ($fine > 0) {
+            try {
+                IB_Player::spend_credits($p, $fine);
+            } catch (IB_Game_Exception $e) {
+                $fine = 0;    // spent elsewhere a moment ago; the warning still stands
+            }
+        }
+        IB_Player::add($p, ['alignment' => -5]);
+        if ($fine >= 1000) {
+            IB_Log::news('smuggle', sprintf('Imperial customs caught %s %s sneaking into %s and fined them %s credits.',
+                IB_Game::rank_title($p->experience), $p->alias_name, $port->port_name, IB_Game::fmt($fine)));
+        }
+        throw new IB_Game_Exception(sprintf(
+            'Imperial customs caught you slipping into %s! You were fined %s credits and turned away. (Catch chance was %d%%.)',
+            $port->port_name, IB_Game::fmt($fine), $chance
+        ), 'warning');
     }
 
     public static function require_docked($p) {
@@ -154,6 +288,12 @@ class IB_Ports {
         $stock = self::qty($port, $commodity);
         $list = self::price($port, $commodity);
 
+        $den = $mode === 'selling' && self::is_smuggler($port);
+        if ($den) {
+            $left = max(0, (int) $p->smuggle_left);
+            if ($left <= 0) throw new IB_Game_Exception('You have stolen all you dare this visit. Undock and come back later.', 'warning');
+            if ($qty > $left) throw new IB_Game_Exception(sprintf('You can only slip %s more units past the dock guards this visit.', IB_Game::fmt($left)));
+        }
         if ($mode === 'selling') {
             if ($qty > $stock) throw new IB_Game_Exception(sprintf('The port only has %s units of %s for sale.', IB_Game::fmt($stock), $label));
             if ($qty > IB_Player::holds_free($p)) throw new IB_Game_Exception(sprintf('You only have %d empty holds.', IB_Player::holds_free($p)));
@@ -162,7 +302,8 @@ class IB_Ports {
             if ($qty > $stock) throw new IB_Game_Exception(sprintf('The port will only buy %s more units of %s.', IB_Game::fmt($stock), $label));
         }
 
-        list($unit, $exp) = self::haggle($p, $port, $commodity, $mode, $list, (int) $offer);
+        // Nobody haggles over stolen goods.
+        list($unit, $exp) = $den ? [$list, 0] : self::haggle($p, $port, $commodity, $mode, $list, (int) $offer);
         $total = (int) round($unit * $qty);
 
         // Claim the port's stock/demand first so two traders can't take the same units.
@@ -171,12 +312,34 @@ class IB_Ports {
         ));
         if (!$claimed) throw new IB_Game_Exception('Another trader just beat you to it. Please try again.');
 
+        // At a den, also claim the haul allowance, guarded so two quick clicks can't overrun it.
+        if ($den) {
+            $ok = $wpdb->query($wpdb->prepare(
+                'UPDATE ' . IB_DB::t('players') . ' SET smuggle_left = smuggle_left - %d WHERE id = %d AND smuggle_left >= %d', $qty, $p->id, $qty
+            ));
+            if (!$ok) {
+                $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('ports') . " SET $col = $col + %d WHERE id = %d", $qty, $port->id));
+                throw new IB_Game_Exception('You have stolen all you dare this visit.', 'warning');
+            }
+            $p->smuggle_left = (int) $p->smuggle_left - $qty;
+        }
+
         if ($mode === 'selling') {
             try {
                 IB_Player::spend_credits($p, $total);
             } catch (IB_Game_Exception $e) {
                 $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('ports') . " SET $col = $col + %d WHERE id = %d", $qty, $port->id));
+                if ($den) {
+                    $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('players') . ' SET smuggle_left = smuggle_left + %d WHERE id = %d', $qty, $p->id));
+                    $p->smuggle_left = (int) $p->smuggle_left + $qty;
+                }
                 throw $e;
+            }
+            if ($den) {
+                IB_Player::add($p, [$commodity => $qty, 'experience' => 1, 'alignment' => -1]);
+                $msg = sprintf('You stole %s %s at a cost effort of %s cr each (%s credits in bribes and gear). %s more units can slip out this visit.',
+                    IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total), IB_Game::fmt(max(0, (int) $p->smuggle_left)));
+                return $msg;
             }
             IB_Player::add($p, [$commodity => $qty, 'experience' => 1 + $exp]);
             $msg = sprintf('You bought %s %s at %s cr each for %s credits.', IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total));

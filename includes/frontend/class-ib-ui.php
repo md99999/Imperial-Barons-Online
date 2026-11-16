@@ -313,6 +313,12 @@ class IB_UI {
         return '<span class="ib-port-code">' . $out . '</span>' . self::specialist_chip($port);
     }
 
+    /** "&#9760;" after a port badge: a smugglers' den, where goods are stolen at a discount. */
+    public static function den_chip($port) {
+        if (!IB_Ports::is_smuggler($port)) return '';
+        return ' <span class="ib-spec-chip ib-warn" title="' . esc_attr(sprintf("Smugglers' den: steal goods %d%% under market, if customs doesn't catch you", IB_Ports::smuggler_discount())) . '">&#9760;</span>';
+    }
+
     /** Initials for the specialist goods, for the chip on a port badge. */
     const SPECIALIST_INITIALS = ['isotopes' => 'I', 'medicine' => 'M', 'luxuries' => 'L'];
 
@@ -322,12 +328,12 @@ class IB_UI {
      */
     public static function specialist_chip($port) {
         $key = IB_Ports::specialty($port);
-        if (!$key) return '';
+        if (!$key) return self::den_chip($port);
         $buying = IB_Ports::mode($port, $key) === 'buying';
         $initial = isset(self::SPECIALIST_INITIALS[$key]) ? self::SPECIALIST_INITIALS[$key] : strtoupper(substr($key, 0, 1));
         return ' <span class="ib-spec-chip ' . ($buying ? 'ib-buy' : 'ib-sell') . '" title="'
             . esc_attr(sprintf('%s %s', $buying ? 'Buys' : 'Sells', IB_Game::label($key)))
-            . '">&#9670;' . esc_html($initial) . '</span>';
+            . '">&#9670;' . esc_html($initial) . '</span>' . self::den_chip($port);
     }
 
     public static function time_ago($mysql) {

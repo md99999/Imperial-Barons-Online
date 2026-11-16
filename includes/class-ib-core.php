@@ -63,6 +63,13 @@ class IB_Settings {
             'vending_warn_days'    => 3,
             'vending_grace_days'   => 3,
             'vending_desert_percent' => 5,
+            'smuggler_ports_percent' => 15,
+            'smuggler_discount_percent' => 60,
+            'smuggler_haul_percent' => 50,
+            'smuggler_catch_percent' => 15,
+            'smuggler_free_visits' => 2,
+            'smuggler_repeat_step' => 10,
+            'smuggler_fine_percent' => 10,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,
@@ -98,6 +105,13 @@ class IB_Settings {
         $current['vending_vault_pays'] = min(1, (int) $current['vending_vault_pays']);
         $current['vending_desert_percent'] = min(50, (int) $current['vending_desert_percent']);
         $current['vending_bastion_percent'] = min(100, (int) $current['vending_bastion_percent']);
+        // Smugglers: always at least half off the market, never more than 90% off; the other
+        // percentages are capped so a heavy hand cannot make dens free or certain death.
+        $current['smuggler_discount_percent'] = max(50, min(90, (int) $current['smuggler_discount_percent']));
+        $current['smuggler_ports_percent'] = min(50, (int) $current['smuggler_ports_percent']);
+        $current['smuggler_haul_percent'] = max(1, min(100, (int) $current['smuggler_haul_percent']));
+        $current['smuggler_catch_percent'] = min(80, (int) $current['smuggler_catch_percent']);
+        $current['smuggler_fine_percent'] = min(50, (int) $current['smuggler_fine_percent']);
         update_option(self::OPTION, $current);
         return $current;
     }
