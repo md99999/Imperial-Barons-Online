@@ -33,7 +33,7 @@ $base = admin_url('admin.php?page=ib_ports');
     <?php foreach ($ports as $port) : ?>
         <tr>
             <td><?php echo (int) $port->sector_id; ?></td>
-            <td><?php echo esc_html($port->port_name); ?></td>
+            <td><?php echo esc_html($port->port_name); ?><?php if (IB_Ports::is_smuggler($port)) echo ' <em>(den)</em>'; ?></td>
             <td><?php echo (int) $port->port_class; ?> (<?php echo esc_html(IB_Ports::class_code($port->port_class)); ?>)</td>
             <?php foreach (IB_Game::commodities() as $key) : ?>
                 <td><?php if (IB_Ports::is_trading_port($port)) : ?>

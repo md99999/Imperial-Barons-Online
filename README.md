@@ -437,6 +437,19 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   Medicine or Luxuries — coloured green where the port buys and cyan where it sells, exactly like the
   B and S letters, and hovering it says which way round it is. The chip shows everywhere a port badge
   does: the sensor sweep, the Port page's suggestions, the port finder and the known-port report.
+- **Smugglers' dens.** A share of the frontier's trading ports (15% by default, never in the Imperial
+  Core) are dens, marked `☠` after their class and named like *Kestholt Black Market*. What a den
+  sells is stolen rather than bought: it costs 60% under the market price by default (never less than
+  50%), with no haggling, and a pilot can carry off up to half their holds per docking. Docking is the
+  risk: Imperial customs catches 15% of pilots, fines them 10% of the credits they carry and turns them
+  away. After two dockings at the same den in 24 hours, each further one adds 10% to the odds, up to
+  80%. Dens buy goods at the usual prices. All of it is tunable under Settings, Smugglers. A universe
+  forged before 1.24.0 gets its dens once, on update.
+- **The Crown's strongbox.** The Crown seeds the Fines Fund with 500 credits (Settings, Smugglers) when a
+  game starts and again after every win, and every customs fine is added to it. The total is shown at the top
+  of Rankings. The fund sits in a strongbox hidden in one frontier sector. The first pilot to warp into
+  that sector takes every credit in it, and the box is hidden somewhere new. The Gazette and Rankings
+  carry a rumour of where it is: the nebula, or a band of sector numbers.
 - **Haggling.** Offer a better price than the port lists. It may accept (bonus experience),
   counter-offer, or refuse to haggle with you for an hour if you push too hard.
 - **Aurelia and the Imperial Drydock.** The Aurelian Armory in sector 1 sells holds, fighters,

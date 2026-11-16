@@ -15,6 +15,7 @@ $port = IB_Ports::in_sector($p->sector_id);
 
 $docked = (int) $p->docked_port_id === (int) $port->id;
 $class = (int) $port->port_class;
+$den = IB_Ports::is_smuggler($port);
 ?>
 <div class="ib-panel">
     <h2><?php echo esc_html($port->port_name); ?> <?php echo IB_UI::pattern($port); ?></h2>
@@ -22,12 +23,28 @@ $class = (int) $port->port_class;
         <p>The Aurelian Armory: holds, fighters, shields, survey drones and charts, and the Crown's recruiting office for colonists.</p>
     <?php elseif ($class === IB_Ports::SHIPYARD) : ?>
         <p>The Imperial Drydock: shipwrights, hardware and Worldseeds.</p>
+    <?php elseif ($den) :
+        $visits = IB_Ports::recent_visits($p, $port); ?>
+        <p class="ib-warn"><strong>Smugglers' den.</strong> A class <?php echo $class; ?> (<?php echo esc_html(IB_Ports::class_code($class)); ?>) port
+            gone bad. What it sells can be stolen off the docks for <?php echo IB_Ports::smuggler_discount(); ?>% under market, no haggling,
+            up to <?php echo IB_Game::fmt(IB_Ports::smuggler_haul($p)); ?> units a visit.<?php
+            $den_buys = array_filter(IB_Ports::goods($port), function ($k) use ($port) { return IB_Ports::mode($port, $k) === 'buying'; });
+            if ($den_buys) echo ' What it buys, it buys at the usual prices.'; ?></p>
+        <?php if (!$docked) : ?>
+            <p class="ib-small">Imperial customs watches the dens: docking here carries a
+                <strong><?php echo IB_Ports::catch_chance($visits); ?>%</strong> chance of being caught, fined
+                <?php echo (int) IB_Settings::get('smuggler_fine_percent'); ?>% of the credits you carry and turned away.
+                The odds rise the more often you come back in a day (<?php echo (int) $visits; ?> docking<?php echo $visits === 1 ? '' : 's'; ?> here in the last 24 hours).</p>
+        <?php endif; ?>
     <?php else : ?>
         <p>Commerce report for a class <?php echo $class; ?> (<?php echo esc_html(IB_Ports::class_code($class)); ?>) port.</p>
     <?php endif; ?>
 
     <?php if (!$docked) : ?>
-        <p><?php echo IB_UI::button('dock', 'Dock (' . (int) IB_Settings::get('dock_turn_cost') . ' turn)'); ?></p>
+        <p><?php echo IB_UI::button('dock', ($den ? 'Slip in and dock' : 'Dock') . ' (' . (int) IB_Settings::get('dock_turn_cost') . ' turn)'); ?></p>
+    <?php elseif ($den) : ?>
+        <p class="ib-good">Docked, and customs never saw you. You can carry off <?php echo IB_Game::fmt(max(0, (int) $p->smuggle_left)); ?> more units this visit.
+            <?php echo IB_UI::button('undock', 'Undock', [], 'ib-btn-alt'); ?></p>
     <?php else : ?>
         <p class="ib-good">Docked. Trading is free while you stay docked. <?php echo IB_UI::button('undock', 'Undock', [], 'ib-btn-alt'); ?></p>
     <?php endif; ?>
@@ -48,8 +65,10 @@ $class = (int) $port->port_class;
             $max = IB_Ports::max($port, $key);
             $price = IB_Ports::price($port, $key);
             $pct = $max ? round(100 * $qty / $max) : 0;
+            $steal = $den && $mode === 'selling';
             if ($mode === 'selling') {
                 $suggest = max(0, min($qty, IB_Player::holds_free($p), (int) floor($p->credits / max(1, $price))));
+                if ($steal) $suggest = min($suggest, max(0, (int) $p->smuggle_left));
             } else {
                 $suggest = max(0, min($qty, (int) $p->$key));
             }
@@ -57,9 +76,9 @@ $class = (int) $port->port_class;
             ?>
             <tr>
                 <td><?php echo esc_html($c['label']); ?><?php if ($special) : ?> <span class="ib-special" title="Specialist good: scarce, valuable and volatile">&#9670;</span><?php endif; ?></td>
-                <td class="<?php echo $mode === 'selling' ? 'ib-sell' : 'ib-buy'; ?>"><?php echo $mode === 'selling' ? 'Selling' : 'Buying'; ?></td>
+                <td class="<?php echo $mode === 'selling' ? 'ib-sell' : 'ib-buy'; ?>"><?php echo $steal ? 'For the taking' : ($mode === 'selling' ? 'Selling' : 'Buying'); ?></td>
                 <td><?php echo IB_Game::fmt($qty); ?> <span class="ib-dim">(<?php echo $pct; ?>%)</span></td>
-                <td><?php echo IB_Game::fmt($price); ?></td>
+                <td><?php echo IB_Game::fmt($price); ?><?php if ($steal) : ?> <span class="ib-dim ib-small" title="Market price at an honest port with this stock">(market <?php echo IB_Game::fmt(IB_Ports::market_price($port, $key)); ?>)</span><?php endif; ?></td>
                 <td><?php echo (int) $p->$key; ?></td>
                 <?php if ($docked) : ?>
                 <td>
@@ -67,11 +86,13 @@ $class = (int) $port->port_class;
                         <?php echo IB_UI::form_open('trade', 'ib-inline ib-trade-form'); ?>
                             <input type="hidden" name="commodity" value="<?php echo esc_attr($key); ?>">
                             <label class="ib-small">Qty <input type="number" name="qty" min="1" max="<?php echo $suggest; ?>" value="<?php echo $suggest; ?>" class="ib-num"></label>
+                            <?php if (!$steal) : ?>
                             <label class="ib-small">Offer <input type="number" name="offer" min="1" value="<?php echo $counter ?: $price; ?>" class="ib-num" title="Price per unit. Haggle for a better deal."></label>
-                            <button type="submit" class="ib-btn"><?php echo $mode === 'selling' ? 'Buy' : 'Sell'; ?></button>
+                            <?php endif; ?>
+                            <button type="submit" class="ib-btn"><?php echo $steal ? 'Steal' : ($mode === 'selling' ? 'Buy' : 'Sell'); ?></button>
                         </form>
                     <?php else : ?>
-                        <span class="ib-dim ib-small"><?php echo $mode === 'selling' ? 'No room, credits or stock' : 'Nothing to sell'; ?></span>
+                        <span class="ib-dim ib-small"><?php echo $steal && (int) $p->smuggle_left <= 0 ? 'Haul taken; undock and come back' : ($mode === 'selling' ? 'No room, credits or stock' : 'Nothing to sell'); ?></span>
                     <?php endif; ?>
                 </td>
                 <?php endif; ?>
@@ -82,7 +103,7 @@ $class = (int) $port->port_class;
     </div>
     <p class="ib-small ib-dim"><span class="ib-special">&#9670;</span> marks a specialist good: scarce and valuable, stocked in small
         quantities and swinging further in price than the staples. Only some ports deal in one, more often out on the frontier.<br>
-        Tip: enter a lower offer when buying or a higher one when selling to haggle.
+        <?php if ($den) : ?>Nobody haggles over stolen goods; what the den buys can still be haggled.<?php else : ?>Tip: enter a lower offer when buying or a higher one when selling to haggle.<?php endif; ?>
         You have <?php echo IB_Player::holds_free($p); ?> empty holds and <?php echo IB_Game::fmt($p->credits); ?> credits.</p>
 </div>
 <?php endif; ?>

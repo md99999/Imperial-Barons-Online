@@ -91,7 +91,7 @@ class IB_Actions {
             // Ports
             case 'dock':
                 $port = IB_Ports::dock($p);
-                return [[sprintf('Docked at %s.', $port->port_name)], 'port'];
+                return [[IB_Ports::docked_message($p, $port)], 'port'];
             case 'undock':
                 IB_Player::update($p, ['docked_port_id' => 0]);
                 return [['You undock and return to open space.'], 'sector'];

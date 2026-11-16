@@ -35,6 +35,7 @@ CREATE TABLE {prefix}ib_players (
   worldseeds int(11) NOT NULL DEFAULT 0,
   survey_drones int(11) NOT NULL DEFAULT 0,
   vending_machines int(11) NOT NULL DEFAULT 0,
+  smuggle_left int(11) NOT NULL DEFAULT 0,
   credits bigint(20) NOT NULL DEFAULT 0,
   experience int(11) NOT NULL DEFAULT 0,
   alignment int(11) NOT NULL DEFAULT 0,
@@ -80,6 +81,7 @@ CREATE TABLE {prefix}ib_ports (
   spec_mode char(1) NOT NULL DEFAULT '',
   spec_qty int(11) NOT NULL DEFAULT 0,
   spec_max int(11) NOT NULL DEFAULT 0,
+  is_smuggler tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
   UNIQUE KEY sector_id (sector_id)
 ) {charset_collate};

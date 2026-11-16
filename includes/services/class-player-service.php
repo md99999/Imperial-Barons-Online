@@ -5,7 +5,7 @@ class IB_Player {
     /** Integer columns that may be changed with add(). */
     const COUNTERS = ['fighters', 'shield_points', 'cargo_holds', 'ore', 'organics', 'equipment',
                       'isotopes', 'medicine', 'luxuries', 'colonists',
-                      'worldseeds', 'survey_drones', 'vending_machines', 'credits', 'experience', 'alignment', 'turns_remaining', 'kills', 'deaths'];
+                      'worldseeds', 'survey_drones', 'vending_machines', 'smuggle_left', 'credits', 'experience', 'alignment', 'turns_remaining', 'kills', 'deaths'];
 
     private static $current = false;
 
@@ -267,6 +267,11 @@ class IB_Player {
         $combat = IB_Combat::sector_entry($p);
         $p->hostile_contact = (bool) $combat;
         foreach ($combat as $m) $msgs[] = ['warning', $m];
+        // Whatever guards the sector gets its say first: only a ship that survives finds the strongbox.
+        if (empty($p->destroyed)) {
+            $box = IB_Ports::claim_strongbox($p);
+            if ($box) $msgs[] = ['success', $box];
+        }
         return $msgs;
     }
 
@@ -333,8 +338,13 @@ class IB_Player {
             $msgs[] = ['warning', sprintf('You arrived at %s but have no turn left to dock.', $port->port_name)];
             return [$msgs, 'sector'];
         }
-        IB_Ports::dock($p);
-        $msgs[] = ['success', sprintf('Docked at %s.', $port->port_name)];
+        try {
+            IB_Ports::dock($p);
+        } catch (IB_Game_Exception $e) {
+            $msgs[] = [$e->type ?? 'error', $e->getMessage()];    // customs at a smugglers' den
+            return [$msgs, 'sector'];
+        }
+        $msgs[] = ['success', IB_Ports::docked_message($p, $port)];
         return [$msgs, 'port'];
     }
 

@@ -40,6 +40,21 @@ class IB_Installer {
                 }
             }
         }
+        // v7 brings smugglers' dens. A universe forged before them gets its share of dens now,
+        // once; a new forge marks its own.
+        if ($from > 0 && $from < 7 && get_option('ib_universe')) {
+            $any = (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . IB_DB::t('ports') . ' WHERE is_smuggler = 1');
+            if (!$any) {
+                $dens = IB_Ports::mark_smugglers();
+                if ($dens) {
+                    $u = (array) get_option('ib_universe');
+                    $u['smuggler_ports'] = $dens;
+                    update_option('ib_universe', $u, false);
+                    IB_Log::news('smuggle', sprintf('Whispers on the frontier: %d ports have turned to smuggling. Their goods come cheap, if Imperial customs looks the other way.', $dens));
+                }
+            }
+            IB_Ports::seed_strongbox();
+        }
     }
 
     /** Runs the schema in sql/install-schema.php through dbDelta, substituting the table prefix. */
