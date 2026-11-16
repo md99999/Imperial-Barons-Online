@@ -90,6 +90,7 @@ class IB_Universe_Forge {
             }
         }
         delete_option('ib_universe');
+        delete_option(IB_Ports::FINES_FUND);    // a new game starts a new fund
         IB_Pathfinder::flush();
     }
 

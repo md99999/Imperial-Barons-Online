@@ -225,6 +225,27 @@ class IB_Ports {
         return $count;
     }
 
+    const FINES_FUND = 'ib_fines_fund';
+
+    /** Credits in the Crown's Fines Fund: every customs fine paid, waiting to be won. */
+    public static function fines_fund() {
+        global $wpdb;
+        // Read straight from the table: the fund is bumped with SQL, so a cached copy can be stale.
+        return max(0, (int) $wpdb->get_var($wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::FINES_FUND)));
+    }
+
+    /** Adds to the fund in one UPDATE, so two fines at the same moment both count. */
+    public static function add_to_fines_fund($credits) {
+        global $wpdb;
+        $credits = (int) $credits;
+        if ($credits <= 0) return;
+        add_option(self::FINES_FUND, '0', '', 'no');    // no-op once it exists
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->options} SET option_value = CAST(option_value AS SIGNED) + %d WHERE option_name = %s", $credits, self::FINES_FUND
+        ));
+        wp_cache_delete(self::FINES_FUND, 'options');
+    }
+
     /** What a pilot is told on docking; at a den, that they got past customs and how much they can carry off. */
     public static function docked_message($p, $port) {
         if (!self::is_smuggler($port)) return sprintf('Docked at %s.', $port->port_name);
@@ -251,13 +272,14 @@ class IB_Ports {
                 $fine = 0;    // spent elsewhere a moment ago; the warning still stands
             }
         }
+        self::add_to_fines_fund($fine);
         IB_Player::add($p, ['alignment' => -5]);
         if ($fine >= 1000) {
             IB_Log::news('smuggle', sprintf('Imperial customs caught %s %s sneaking into %s and fined them %s credits.',
                 IB_Game::rank_title($p->experience), $p->alias_name, $port->port_name, IB_Game::fmt($fine)));
         }
         throw new IB_Game_Exception(sprintf(
-            'Imperial customs caught you slipping into %s! You were fined %s credits and turned away. (Catch chance was %d%%.)',
+            'Imperial customs caught you slipping into %s! You were fined %s credits, paid into the Crown\'s Fines Fund, and turned away. (Catch chance was %d%%.)',
             $port->port_name, IB_Game::fmt($fine), $chance
         ), 'warning');
     }

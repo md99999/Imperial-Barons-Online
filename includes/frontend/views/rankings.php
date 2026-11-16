@@ -9,6 +9,9 @@ if (!isset($tabs[$by])) $by = 'networth';
 <?php if (!IB_Shortcodes::att('compact', false)) { $ib_logo_small = !empty($p); include IB_PATH . 'includes/frontend/views/_logo.php'; } ?>
 <div class="ib-panel">
     <h2>Rankings</h2>
+    <?php $ib_fund = IB_Ports::fines_fund(); ?>
+    <p class="ib-fund">Crown's Fines Fund: <strong class="ib-special"><?php echo IB_Game::fmt($ib_fund); ?> credits</strong>
+        <span class="ib-dim ib-small">Every customs fine paid at a smugglers' den goes here, and it keeps growing until a pilot wins it.</span></p>
     <nav class="ib-tabs" aria-label="Ranking type">
         <?php foreach ($tabs as $key => $label) : ?>
             <a href="<?php echo esc_url(IB_UI::url('rankings', ['by' => $key])); ?>"<?php echo $key === $by ? ' class="ib-active" aria-current="page"' : ''; ?>><?php echo esc_html($label); ?></a>
