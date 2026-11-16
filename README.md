@@ -445,6 +445,10 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   away. After two dockings at the same den in 24 hours, each further one adds 10% to the odds, up to
   80%. Dens buy goods at the usual prices. All of it is tunable under Settings, Smugglers. A universe
   forged before 1.24.0 gets its dens once, on update.
+- **The Crown's strongbox.** Every customs fine is paid into the Crown's Fines Fund, shown at the top
+  of Rankings. The fund sits in a strongbox hidden in one frontier sector. The first pilot to warp into
+  that sector takes every credit in it, and the box is hidden somewhere new. The Gazette and Rankings
+  carry a rumour of where it is: the nebula, or a band of sector numbers.
 - **Haggling.** Offer a better price than the port lists. It may accept (bonus experience),
   counter-offer, or refuse to haggle with you for an hour if you push too hard.
 - **Aurelia and the Imperial Drydock.** The Aurelian Armory in sector 1 sells holds, fighters,

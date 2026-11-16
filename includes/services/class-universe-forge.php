@@ -90,7 +90,9 @@ class IB_Universe_Forge {
             }
         }
         delete_option('ib_universe');
-        delete_option(IB_Ports::FINES_FUND);    // a new game starts a new fund
+        delete_option(IB_Ports::FINES_FUND);    // a new game starts a new fund, hidden afresh
+        delete_option(IB_Ports::STRONGBOX);
+        delete_option(IB_Ports::STRONGBOX_HINT);
         IB_Pathfinder::flush();
     }
 

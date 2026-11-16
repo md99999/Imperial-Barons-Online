@@ -264,6 +264,8 @@ class IB_Player {
         self::spend_turns($p, (int) IB_Settings::get('move_turn_cost'));
         self::update($p, ['sector_id' => $to, 'prev_sector_id' => $p->sector_id, 'docked_port_id' => 0, 'landed_planet_id' => 0]);
         $msgs = array_map(function ($m) { return ['success', $m]; }, self::arrive($p));
+        $box = IB_Ports::claim_strongbox($p);
+        if ($box) $msgs[] = ['success', $box];
         $combat = IB_Combat::sector_entry($p);
         $p->hostile_contact = (bool) $combat;
         foreach ($combat as $m) $msgs[] = ['warning', $m];

@@ -244,6 +244,67 @@ class IB_Ports {
             "UPDATE {$wpdb->options} SET option_value = CAST(option_value AS SIGNED) + %d WHERE option_name = %s", $credits, self::FINES_FUND
         ));
         wp_cache_delete(self::FINES_FUND, 'options');
+        if (!self::strongbox_sector()) self::hide_strongbox();
+    }
+
+    /*
+     * The Crown's strongbox holds the Fines Fund. It is hidden in one frontier sector; the first
+     * pilot to warp in takes the whole fund, and the box is hidden again somewhere new. Where it
+     * is goes in a hint (a nebula, or a band of sector numbers), posted in the Gazette and shown
+     * on Rankings.
+     */
+    const STRONGBOX = 'ib_strongbox';
+    const STRONGBOX_HINT = 'ib_strongbox_hint';
+
+    public static function strongbox_sector() {
+        return (int) get_option(self::STRONGBOX, 0);
+    }
+
+    public static function strongbox_hint() {
+        return (string) get_option(self::STRONGBOX_HINT, '');
+    }
+
+    /** Hides the strongbox in a random sector outside the Core, away from $not. @return int the sector, 0 if none */
+    public static function hide_strongbox($not = 0) {
+        global $wpdb;
+        $s = IB_DB::t('sectors');
+        $row = $wpdb->get_row($wpdb->prepare("SELECT id, nebula FROM $s WHERE is_core = 0 AND id <> %d ORDER BY RAND() LIMIT 1", (int) $not));
+        if (!$row) return 0;
+        if ($row->nebula !== '') {
+            $hint = sprintf('somewhere in %s', $row->nebula);
+        } else {
+            $max = max(100, (int) $wpdb->get_var("SELECT MAX(id) FROM $s"));
+            $band = max(50, (int) (round($max / 10 / 50) * 50));     // about a tenth of the galaxy
+            $lo = (int) (floor(((int) $row->id - 1) / $band) * $band) + 1;
+            $hint = sprintf('somewhere between sectors %d and %d', $lo, min($max, $lo + $band - 1));
+        }
+        update_option(self::STRONGBOX, (int) $row->id, false);
+        update_option(self::STRONGBOX_HINT, $hint, false);
+        IB_Log::news('strongbox', sprintf("Rumour on the spacelanes: the Crown's strongbox, holding the Fines Fund, is hidden %s. The first pilot to find it keeps every credit.", $hint));
+        return (int) $row->id;
+    }
+
+    /**
+     * Called whenever a ship arrives in a sector. If the strongbox is here and holds credits, this
+     * pilot takes it all. The fund is emptied with a guarded UPDATE, so only one pilot can win it.
+     *
+     * @return string message, or '' when there is nothing here
+     */
+    public static function claim_strongbox($p) {
+        global $wpdb;
+        if ((int) $p->sector_id !== self::strongbox_sector()) return '';
+        $fund = self::fines_fund();
+        if ($fund <= 0) return '';
+        $won = $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->options} SET option_value = '0' WHERE option_name = %s AND option_value = %s", self::FINES_FUND, (string) $fund
+        ));
+        wp_cache_delete(self::FINES_FUND, 'options');
+        if (!$won) return '';
+        IB_Player::add($p, ['credits' => $fund, 'experience' => 25]);
+        IB_Log::news('strongbox', sprintf("%s %s found the Crown's strongbox in sector %d and carried off the Fines Fund: %s credits!",
+            IB_Game::rank_title($p->experience), $p->alias_name, (int) $p->sector_id, IB_Game::fmt($fund)));
+        self::hide_strongbox((int) $p->sector_id);
+        return sprintf("You found the Crown's strongbox! It held the Fines Fund: %s credits are yours. (+25 experience)", IB_Game::fmt($fund));
     }
 
     /** What a pilot is told on docking; at a den, that they got past customs and how much they can carry off. */
