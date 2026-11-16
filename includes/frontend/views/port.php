@@ -27,7 +27,9 @@ $den = IB_Ports::is_smuggler($port);
         $visits = IB_Ports::recent_visits($p, $port); ?>
         <p class="ib-warn"><strong>Smugglers' den.</strong> A class <?php echo $class; ?> (<?php echo esc_html(IB_Ports::class_code($class)); ?>) port
             gone bad. What it sells can be stolen off the docks for <?php echo IB_Ports::smuggler_discount(); ?>% under market, no haggling,
-            up to <?php echo IB_Game::fmt(IB_Ports::smuggler_haul($p)); ?> units a visit. What it buys, it buys at the usual prices.</p>
+            up to <?php echo IB_Game::fmt(IB_Ports::smuggler_haul($p)); ?> units a visit.<?php
+            $den_buys = array_filter(IB_Ports::goods($port), function ($k) use ($port) { return IB_Ports::mode($port, $k) === 'buying'; });
+            if ($den_buys) echo ' What it buys, it buys at the usual prices.'; ?></p>
         <?php if (!$docked) : ?>
             <p class="ib-small">Imperial customs watches the dens: docking here carries a
                 <strong><?php echo IB_Ports::catch_chance($visits); ?>%</strong> chance of being caught, fined
@@ -101,7 +103,7 @@ $den = IB_Ports::is_smuggler($port);
     </div>
     <p class="ib-small ib-dim"><span class="ib-special">&#9670;</span> marks a specialist good: scarce and valuable, stocked in small
         quantities and swinging further in price than the staples. Only some ports deal in one, more often out on the frontier.<br>
-        Tip: enter a lower offer when buying or a higher one when selling to haggle.
+        <?php if ($den) : ?>Nobody haggles over stolen goods; what the den buys can still be haggled.<?php else : ?>Tip: enter a lower offer when buying or a higher one when selling to haggle.<?php endif; ?>
         You have <?php echo IB_Player::holds_free($p); ?> empty holds and <?php echo IB_Game::fmt($p->credits); ?> credits.</p>
 </div>
 <?php endif; ?>
