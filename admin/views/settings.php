@@ -53,6 +53,7 @@ $fields = [
         'smuggler_free_visits' => ['Free dockings a day', 'Dockings at the same den in 24 hours before the catch chance starts to climb.'],
         'smuggler_repeat_step' => ['Catch rise per extra docking (%)', 'Added to the catch chance for each docking at the same den past the free ones. The total never passes 80%.'],
         'smuggler_fine_percent' => ['Customs fine (% of credits carried)', 'Taken from a caught pilot\'s credits, at least 25 credits. At most 50.'],
+        'strongbox_seed' => ['Strongbox seed (credits)', 'The Crown puts this much into the Fines Fund when a game starts and again each time a pilot finds the strongbox, so there is always something to hunt for. Customs fines add to it.'],
     ],
     'Exploration' => [
         'discovery_chance' => ['Discovery chance %', 'Chance that a first visit to a sector outside the Imperial Core turns up salvage, a credit cache, abandoned fighters, a survey beacon or a pirate ambush.'],

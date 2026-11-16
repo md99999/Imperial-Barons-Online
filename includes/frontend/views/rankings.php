@@ -9,7 +9,7 @@ if (!isset($tabs[$by])) $by = 'networth';
 <?php if (!IB_Shortcodes::att('compact', false)) { $ib_logo_small = !empty($p); include IB_PATH . 'includes/frontend/views/_logo.php'; } ?>
 <div class="ib-panel">
     <h2>Rankings</h2>
-    <?php $ib_fund = IB_Ports::fines_fund(); $ib_hint = IB_Ports::strongbox_hint(); ?>
+    <?php IB_Ports::seed_strongbox(); $ib_fund = IB_Ports::fines_fund(); $ib_hint = IB_Ports::strongbox_hint(); ?>
     <p class="ib-fund">Crown's Fines Fund: <strong class="ib-special"><?php echo IB_Game::fmt($ib_fund); ?> credits</strong><br>
         <span class="ib-dim ib-small">Every customs fine paid at a smugglers' den goes into the Crown's strongbox, and it keeps growing until
         a pilot finds it: the first to warp into its sector takes every credit, and the box is hidden again.<?php if ($ib_hint) : ?>

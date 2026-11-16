@@ -70,6 +70,7 @@ class IB_Settings {
             'smuggler_free_visits' => 2,
             'smuggler_repeat_step' => 10,
             'smuggler_fine_percent' => 10,
+            'strongbox_seed' => 500,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,
@@ -112,6 +113,7 @@ class IB_Settings {
         $current['smuggler_haul_percent'] = max(1, min(100, (int) $current['smuggler_haul_percent']));
         $current['smuggler_catch_percent'] = min(80, (int) $current['smuggler_catch_percent']);
         $current['smuggler_fine_percent'] = min(50, (int) $current['smuggler_fine_percent']);
+        $current['strongbox_seed'] = max(0, (int) $current['strongbox_seed']);
         update_option(self::OPTION, $current);
         return $current;
     }

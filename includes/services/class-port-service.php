@@ -239,12 +239,28 @@ class IB_Ports {
         global $wpdb;
         $credits = (int) $credits;
         if ($credits <= 0) return;
-        add_option(self::FINES_FUND, '0', '', 'no');    // no-op once it exists
+        self::seed_strongbox();
         $wpdb->query($wpdb->prepare(
             "UPDATE {$wpdb->options} SET option_value = CAST(option_value AS SIGNED) + %d WHERE option_name = %s", $credits, self::FINES_FUND
         ));
         wp_cache_delete(self::FINES_FUND, 'options');
-        if (!self::strongbox_sector()) self::hide_strongbox();
+    }
+
+    /**
+     * Starts the fund once per game: the Crown's seed goes in and the box is hidden, so Rankings
+     * has a total and a rumour from the first day. Does nothing once the fund exists.
+     */
+    public static function seed_strongbox() {
+        global $wpdb;
+        if (self::strongbox_sector()) return;
+        if (!get_option('ib_universe')) return;    // no universe to hide it in yet
+        $seed = max(0, (int) IB_Settings::get('strongbox_seed'));
+        add_option(self::FINES_FUND, (string) $seed, '', 'no');
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND CAST(option_value AS SIGNED) < %d", (string) $seed, self::FINES_FUND, $seed
+        ));
+        wp_cache_delete(self::FINES_FUND, 'options');
+        self::hide_strongbox();
     }
 
     /*
@@ -292,11 +308,14 @@ class IB_Ports {
      */
     public static function claim_strongbox($p) {
         global $wpdb;
+        if (!self::strongbox_sector()) self::seed_strongbox();
         if ((int) $p->sector_id !== self::strongbox_sector()) return '';
         $fund = self::fines_fund();
         if ($fund <= 0) return '';
+        // Empty it and put the Crown's fresh seed in, in one guarded step: only one pilot wins.
+        $seed = max(0, (int) IB_Settings::get('strongbox_seed'));
         $won = $wpdb->query($wpdb->prepare(
-            "UPDATE {$wpdb->options} SET option_value = '0' WHERE option_name = %s AND option_value = %s", self::FINES_FUND, (string) $fund
+            "UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s", (string) $seed, self::FINES_FUND, (string) $fund
         ));
         wp_cache_delete(self::FINES_FUND, 'options');
         if (!$won) return '';

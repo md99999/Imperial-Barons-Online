@@ -53,6 +53,7 @@ class IB_Installer {
                     IB_Log::news('smuggle', sprintf('Whispers on the frontier: %d ports have turned to smuggling. Their goods come cheap, if Imperial customs looks the other way.', $dens));
                 }
             }
+            IB_Ports::seed_strongbox();
         }
     }
 

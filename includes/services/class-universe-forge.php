@@ -76,6 +76,7 @@ class IB_Universe_Forge {
         ];
         update_option('ib_universe', $summary, false);
         IB_Log::news('forge', sprintf('The Universe Forge has spoken! A new universe of %s sectors has been born. The Imperial Drydock lies in sector %d.', IB_Game::fmt($n), $drydock));
+        IB_Ports::seed_strongbox();    // the Crown's seed goes in and the strongbox is hidden
         IB_Log::admin('forge', sprintf('Universe generated: %d sectors, %d warps, %d ports, %d planets, %d fleets (seed %d).', $n, $warp_count, $ports, $planets, $fleets, $seed));
         return $summary;
     }
