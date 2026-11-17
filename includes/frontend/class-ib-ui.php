@@ -232,7 +232,9 @@ class IB_UI {
         $s = IB_Settings::all();
         $left = (int) $p->turns_remaining;
         $reset = new DateTime('tomorrow', wp_timezone());
-        $in = human_time_diff(current_time('timestamp'), $reset->getTimestamp());
+        // Both ends must be real Unix times. current_time('timestamp') is shifted by the site's
+        // UTC offset, which made the countdown wrong by that many hours.
+        $in = human_time_diff(time(), $reset->getTimestamp());
 
         $costs = [
             sprintf('warp to another sector %s', self::turns($s['move_turn_cost'])),
