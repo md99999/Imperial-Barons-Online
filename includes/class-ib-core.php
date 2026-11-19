@@ -29,6 +29,10 @@ class IB_DB {
 class IB_Settings {
     const OPTION = 'ib_settings';
 
+    /** Imperial Bounty: credits paid to every pilot each night. 0 turns it off; never more than the max. */
+    const IMPERIAL_BOUNTY_DEFAULT = 500;
+    const IMPERIAL_BOUNTY_MAX = 1000000;
+
     public static function defaults() {
         return [
             'turns_per_day'        => 10,
@@ -71,6 +75,7 @@ class IB_Settings {
             'smuggler_repeat_step' => 10,
             'smuggler_fine_percent' => 10,
             'strongbox_seed' => 500,
+            'imperial_bounty' => self::IMPERIAL_BOUNTY_DEFAULT,
             'price_survey_drone'   => 400,
             'price_nebula_chart'   => 1500,
             'discovery_chance'     => 30,
@@ -114,8 +119,32 @@ class IB_Settings {
         $current['smuggler_catch_percent'] = min(80, (int) $current['smuggler_catch_percent']);
         $current['smuggler_fine_percent'] = min(50, (int) $current['smuggler_fine_percent']);
         $current['strongbox_seed'] = max(0, (int) $current['strongbox_seed']);
+        $current['imperial_bounty'] = self::clamp_imperial_bounty($current['imperial_bounty']);
         update_option(self::OPTION, $current);
         return $current;
+    }
+
+    /**
+     * The nightly Imperial Bounty, in credits, always a whole number from 0 to IMPERIAL_BOUNTY_MAX.
+     * Clamped on read as well as on save, so a value written straight into the database (or left
+     * there by a damaged option) can never pay out more than the ceiling. Anything that is not a
+     * number pays nothing rather than guessing.
+     */
+    public static function imperial_bounty() {
+        return self::clamp_imperial_bounty(self::get('imperial_bounty'));
+    }
+
+    private static function clamp_imperial_bounty($value) {
+        if (is_int($value)) {
+            $n = $value;
+        } elseif (is_string($value) && preg_match('/^\s*\d{1,10}\s*$/', $value)) {
+            $n = (int) $value;
+        } elseif (is_float($value) && is_finite($value)) {
+            $n = $value >= self::IMPERIAL_BOUNTY_MAX ? self::IMPERIAL_BOUNTY_MAX : (int) $value;
+        } else {
+            return 0;
+        }
+        return max(0, min(self::IMPERIAL_BOUNTY_MAX, $n));
     }
 }
 

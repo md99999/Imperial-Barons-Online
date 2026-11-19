@@ -13,6 +13,9 @@ $fields = [
         'dock_turn_cost' => ['Dock at a port', 'Trading while docked is free.'],
         'attack_turn_cost' => ['Attack', ''],
     ],
+    'Imperial Bounty' => [
+        'imperial_bounty' => ['Imperial Bounty (credits a night)', 'The Crown pays every pilot this much once a night, at daily maintenance. Each pilot is paid at most once a day, however often maintenance runs. 0 turns it off. At most ' . number_format_i18n(IB_Settings::IMPERIAL_BOUNTY_MAX) . '.', IB_Settings::IMPERIAL_BOUNTY_MAX],
+    ],
     'New pilots' => [
         'starting_credits' => ['Starting credits', ''],
         'starting_fighters' => ['Starting fighters', ''],
@@ -74,7 +77,8 @@ $fields = [
                     <th><label for="ib-<?php echo esc_attr($key); ?>"><?php echo esc_html($row[0]); ?></label></th>
                     <td>
                         <input id="ib-<?php echo esc_attr($key); ?>" name="ib[<?php echo esc_attr($key); ?>]"
-                               type="<?php echo $text ? 'text' : 'number'; ?>" <?php echo $text ? '' : 'min="0"'; ?>
+                               type="<?php echo $text ? 'text' : 'number'; ?>" <?php echo $text ? '' : 'min="0" step="1"'; ?>
+                               <?php if (!$text && isset($row[2])) : ?>max="<?php echo esc_attr((int) $row[2]); ?>"<?php endif; ?>
                                value="<?php echo esc_attr($s[$key]); ?>" class="<?php echo $text ? 'regular-text' : 'small-text'; ?>">
                         <?php if ($row[1]) : ?><p class="description"><?php echo esc_html($row[1]); ?></p><?php endif; ?>
                     </td>

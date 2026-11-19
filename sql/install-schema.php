@@ -42,6 +42,7 @@ CREATE TABLE {prefix}ib_players (
   team_id bigint(20) unsigned NOT NULL DEFAULT 0,
   turns_remaining int(11) NOT NULL DEFAULT 0,
   last_turn_reset date DEFAULT NULL,
+  last_bounty date DEFAULT NULL,
   kills int(11) NOT NULL DEFAULT 0,
   deaths int(11) NOT NULL DEFAULT 0,
   created_at datetime DEFAULT NULL,
