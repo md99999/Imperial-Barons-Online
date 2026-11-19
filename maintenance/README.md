@@ -5,7 +5,7 @@ Command-line scripts for running the game's scheduled jobs from a real (system) 
 | Script | Schedule | Does |
 |---|---|---|
 | `hourly_maintenance.php` | every hour | ports restock, planets produce, alien fleets regenerate and roam |
-| `daily_maintenance.php` | once a day at the site's midnight | turns reset, colonies grow, old news and read mail purged |
+| `daily_maintenance.php` | once a day at the site's midnight | turns reset, Imperial Bounty paid, colonies grow, old news and read mail purged |
 
 Each script finds and loads WordPress by itself, so it can be run from any directory:
 

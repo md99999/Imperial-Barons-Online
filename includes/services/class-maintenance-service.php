@@ -114,7 +114,7 @@ class IB_Maintenance {
     }
 
     /**
-     * Turns reset, colonies grow, old news and read mail are cleaned up.
+     * Turns reset, the Imperial Bounty is paid, colonies grow, old news and read mail are cleaned up.
      * Runs at most once per calendar day (site timezone) unless $force is set.
      * Every start is written to the Cron Maintenance Log, whether it did the work or stood down.
      *
@@ -222,6 +222,7 @@ class IB_Maintenance {
             'UPDATE ' . IB_DB::t('players') . ' SET turns_remaining = %d, last_turn_reset = %s WHERE last_turn_reset IS NULL OR last_turn_reset <> %s',
             (int) IB_Settings::get('turns_per_day'), $today, $today
         ));
+        $bounty = self::pay_bounty($today);
         IB_Planets::grow();
         $sale = IB_Planets::sell_stock();
         // After the sale, so a Vault that is allowed to pay the restock has today's takings in it.
@@ -231,8 +232,32 @@ class IB_Maintenance {
         $mail_cutoff = date('Y-m-d H:i:s', current_time('timestamp') - 30 * DAY_IN_SECONDS);
         $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('messages') . ' WHERE is_read = 1 AND created_at < %s', $mail_cutoff));
         update_option('ib_last_daily', current_time('mysql'), false);
-        return sprintf('Daily maintenance: turns reset, colonies grew, the factors bought %s units from %d world(s) for %s credits, vending machines restocked on %d world(s)%s, old news and mail purged.',
+        return sprintf('Daily maintenance: turns reset, %s, colonies grew, the factors bought %s units from %d world(s) for %s credits, vending machines restocked on %d world(s)%s, old news and mail purged.',
+            self::bounty_summary($bounty),
             IB_Game::fmt($sale['units']), $sale['planets'], IB_Game::fmt($sale['credits']), $vending['planets'],
             $vending['deserted'] ? sprintf(' (%s hungry fighters deserted)', IB_Game::fmt($vending['deserted'])) : '');
+    }
+
+    /**
+     * Pays the Imperial Bounty without letting a failure stop the rest of the night's work. The
+     * other daily steps (colony growth, the factors' sale) are not safe to repeat, so an exception
+     * here must not leave the day unfinished and due to run again.
+     */
+    private static function pay_bounty($today) {
+        try {
+            return IB_Player::pay_imperial_bounty($today);
+        } catch (Throwable $e) {
+            error_log('Imperial Barons Online: Imperial Bounty payout threw ' . get_class($e) . ': ' . $e->getMessage());
+            IB_Log::admin('bounty', sprintf('Imperial Bounty for %s failed; pilots not yet paid will be paid if daily maintenance is run again today. Details are in the PHP error log.', $today));
+            return ['ok' => false, 'amount' => 0, 'pilots' => 0, 'credits' => 0];
+        }
+    }
+
+    /** The Imperial Bounty's part of the daily log line. */
+    private static function bounty_summary(array $bounty) {
+        if (empty($bounty['ok'])) return 'Imperial Bounty FAILED (see the admin log)';
+        if ((int) $bounty['amount'] <= 0) return 'Imperial Bounty off';
+        return sprintf('Imperial Bounty of %s credits paid to %s pilot(s)',
+            IB_Game::fmt($bounty['amount']), IB_Game::fmt($bounty['pilots']));
     }
 }

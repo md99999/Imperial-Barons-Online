@@ -2,7 +2,7 @@ All tables use the site's table prefix (shown here as `wp_`). The schema lives i
 
 | Table | Contents |
 |---|---|
-| wp_ib_players | one row per pilot, linked to a WordPress user: location, ship, cargo, credits, turns, experience, alignment |
+| wp_ib_players | one row per pilot, linked to a WordPress user: location, ship, cargo, credits, turns, experience, alignment; `last_bounty` is the last day the Imperial Bounty was paid to that pilot |
 | wp_ib_sectors | sector id, map x/y, nebula name, Imperial Core flag (`is_core`), beacon |
 | wp_ib_warps | directed warp lanes (from_sector, to_sector) |
 | wp_ib_ports | port per sector: class 0-9, per-commodity quantity and maximum |

@@ -203,7 +203,7 @@ The game relies on two scheduled jobs:
 | Job | When | Does |
 |---|---|---|
 | Hourly | every hour | ports restock, planets produce commodities and fighters, alien fleets regenerate and roam |
-| Daily | midnight (site timezone) | turns reset, colonies grow, old news and read mail are purged |
+| Daily | midnight (site timezone) | turns reset, the Imperial Bounty is paid, colonies grow, old news and read mail are purged |
 
 #### Why a real cron job is needed
 
@@ -426,6 +426,9 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
   once, after which trading and haggling are free until you leave) and attacking (1). Landing, cargo
   transfers, bastions, drones, the Computer, the Map and messages are all free. Turns reset at midnight
   (site time) and do not carry over; every game page shows a bar with the turns you have left.
+- **Imperial Bounty.** Every night, at daily maintenance, the Crown pays every pilot 500 credits (Settings,
+  Imperial Bounty; 0 turns it off, at most 1,000,000). Each pilot is paid at most once a day however often
+  maintenance runs, and each payout is noted in the Gazette and on the Cron Maintenance Log.
 - **Trading.** A port's class is three letters showing whether it **B**uys or **S**ells the three
   staples, Ferrium Ore, Biostock and Machinery, in that order. Buy where a port sells, and sell where
   another port buys. Well-stocked ports sell cheaply; ports with strong demand pay the most.

@@ -62,6 +62,52 @@ class IB_Player {
         return $p;
     }
 
+    /**
+     * The Imperial Bounty: the Crown pays every pilot the same sum once a night, from daily maintenance.
+     *
+     * One UPDATE pays each pilot and stamps last_bounty with $day in the same row write, so a pilot
+     * is paid at most once per day however many times maintenance runs (a rerun, "Run now", or WP-Cron
+     * and a server cron racing each other). A pilot is paid only when their stamp is strictly older
+     * than $day, so moving the site clock or timezone backwards cannot pay a day twice either. If the
+     * statement fails nobody is stamped who was not paid, so running daily maintenance again that day
+     * pays only those still owed. A pilot whose credits would overflow the column is skipped.
+     *
+     * @param string $day the site-local date being paid for, Y-m-d
+     * @return array ['ok' => bool, 'amount' => int credits each, 'pilots' => int paid, 'credits' => int total]
+     */
+    public static function pay_imperial_bounty($day) {
+        global $wpdb;
+        $out = ['ok' => true, 'amount' => 0, 'pilots' => 0, 'credits' => 0];
+        if (!is_string($day) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $day)
+            || !checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))) {
+            error_log('Imperial Barons Online: Imperial Bounty not paid, invalid day ' . var_export($day, true) . '.');
+            $out['ok'] = false;
+            return $out;
+        }
+        $amount = IB_Settings::imperial_bounty();
+        $out['amount'] = $amount;
+        if ($amount <= 0) return $out;
+        $paid = $wpdb->query($wpdb->prepare(
+            'UPDATE ' . IB_DB::t('players') . ' SET credits = credits + %d, last_bounty = %s
+             WHERE (last_bounty IS NULL OR last_bounty < %s) AND credits <= %d',
+            $amount, $day, $day, PHP_INT_MAX - $amount
+        ));
+        if ($paid === false) {
+            // The database's own words go to the server's error log only, never to a page.
+            error_log('Imperial Barons Online: Imperial Bounty payout failed: ' . $wpdb->last_error);
+            IB_Log::admin('bounty', sprintf('Imperial Bounty for %s failed; pilots not yet paid will be paid if daily maintenance is run again today. Details are in the PHP error log.', $day));
+            $out['ok'] = false;
+            return $out;
+        }
+        $out['pilots'] = (int) $paid;
+        $out['credits'] = $out['pilots'] * $amount;
+        if ($out['pilots'] > 0) {
+            IB_Log::news('bounty', sprintf('The Crown paid the Imperial Bounty of %s credits to %s %s.',
+                IB_Game::fmt($amount), IB_Game::fmt($out['pilots']), $out['pilots'] === 1 ? 'pilot' : 'pilots'));
+        }
+        return $out;
+    }
+
     public static function create($user_id, $alias, $ship_name) {
         global $wpdb;
         $alias = trim(sanitize_text_field($alias));
