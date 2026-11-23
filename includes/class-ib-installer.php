@@ -18,8 +18,28 @@ class IB_Installer {
     public static function maybe_upgrade() {
         $from = (int) get_option('ib_db_version');
         if (get_option('ib_db_version') !== IB_DB_VERSION) {
+            self::before_schema($from);
             self::install_schema();
             self::migrate($from);
+        }
+    }
+
+    /**
+     * Data fixes that must happen before the schema changes. v9 makes pilot aliases UNIQUE, which
+     * dbDelta cannot add while two pilots share one, so any duplicates (possible before, through
+     * two registrations racing) are renamed first: every copy after the first gets its id appended.
+     */
+    private static function before_schema($from) {
+        global $wpdb;
+        if ($from <= 0 || $from >= 9) return;
+        $t = IB_DB::t('players');
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($t))) !== $t) return;
+        $dupes = $wpdb->get_results("SELECT p.id, p.alias_name FROM $t p JOIN $t q ON q.alias_name = p.alias_name AND q.id < p.id");
+        foreach ((array) $dupes as $d) {
+            $suffix = '#' . (int) $d->id;
+            $alias = IB_Names::cut($d->alias_name, 41 - strlen($suffix)) . $suffix;
+            $wpdb->update($t, ['alias_name' => $alias], ['id' => (int) $d->id]);
+            IB_Log::admin('upgrade', sprintf('Renamed duplicate pilot alias "%s" (#%d) to "%s" so aliases can be unique.', $d->alias_name, $d->id, $alias));
         }
     }
 

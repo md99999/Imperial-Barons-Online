@@ -40,6 +40,10 @@ CREATE TABLE {prefix}ib_players (
   experience int(11) NOT NULL DEFAULT 0,
   alignment int(11) NOT NULL DEFAULT 0,
   team_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  team_request_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  team_request_at datetime DEFAULT NULL,
+  msg_count int(11) NOT NULL DEFAULT 0,
+  msg_window datetime DEFAULT NULL,
   turns_remaining int(11) NOT NULL DEFAULT 0,
   last_turn_reset date DEFAULT NULL,
   last_bounty date DEFAULT NULL,
@@ -49,8 +53,10 @@ CREATE TABLE {prefix}ib_players (
   last_seen datetime DEFAULT NULL,
   PRIMARY KEY  (id),
   UNIQUE KEY user_id (user_id),
+  UNIQUE KEY alias_name (alias_name),
   KEY sector_id (sector_id),
-  KEY team_id (team_id)
+  KEY team_id (team_id),
+  KEY team_request_id (team_request_id)
 ) {charset_collate};
 CREATE TABLE {prefix}ib_sectors (
   id int(11) NOT NULL,
@@ -117,6 +123,8 @@ CREATE TABLE {prefix}ib_teams (
   password_hash varchar(255) NOT NULL DEFAULT '',
   captain_player_id bigint(20) unsigned NOT NULL DEFAULT 0,
   combat_medals int(11) NOT NULL DEFAULT 0,
+  join_attempts int(11) NOT NULL DEFAULT 0,
+  join_window datetime DEFAULT NULL,
   created_at datetime DEFAULT NULL,
   PRIMARY KEY  (id),
   UNIQUE KEY team_name (team_name)

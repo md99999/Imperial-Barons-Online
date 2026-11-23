@@ -22,7 +22,8 @@ if (!isset($tabs[$by])) $by = 'networth';
 
 <?php if ($by === 'teams') :
     $teams = IB_Teams::all();
-    foreach ($teams as $t) $t->worth = IB_Teams::net_worth($t->id);
+    $ib_pilots = IB_Player::all_with_worth();
+    foreach ($teams as $t) $t->worth = IB_Teams::net_worth($t->id, $ib_pilots);
     usort($teams, function ($a, $b) { return $b->worth <=> $a->worth; }); ?>
     <?php if (!$teams) : ?><p class="ib-dim">No teams have been formed yet.</p><?php else : ?>
     <table class="ib-table">
@@ -42,8 +43,7 @@ if (!isset($tabs[$by])) $by = 'networth';
     <?php endif; ?>
 
 <?php else :
-    $players = $wpdb->get_results('SELECT * FROM ' . IB_DB::t('players'));
-    foreach ($players as $pl) $pl->worth = IB_Player::net_worth($pl);
+    $players = array_values(IB_Player::all_with_worth(false));
     $sorters = [
         'networth' => function ($a, $b) { return $b->worth <=> $a->worth; },
         'experience' => function ($a, $b) { return $b->experience <=> $a->experience; },

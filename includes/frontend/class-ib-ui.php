@@ -89,7 +89,7 @@ class IB_UI {
         return '<form method="post" class="ib-form ' . esc_attr($class) . '">'
             . '<input type="hidden" name="ib_action" value="' . esc_attr($action) . '">'
             . '<input type="hidden" name="ib_return" value="' . esc_url(self::current_url()) . '">'
-            . wp_nonce_field('ib_action', 'ib_nonce', true, false);
+            . wp_nonce_field('ib_action_' . sanitize_key($action), 'ib_nonce', true, false);
     }
 
     /** The URL of the page being viewed, including its query string. */

@@ -341,7 +341,7 @@ class IB_Ports {
     private static function customs($p, $port) {
         $chance = self::catch_chance(self::recent_visits($p, $port));
         self::record_visit($p, $port);
-        if (mt_rand(1, 100) > $chance) return;
+        if (random_int(1, 100) > $chance) return;
 
         $credits = max(0, (int) $p->credits);
         $fine = min($credits, max(25, (int) floor($credits * max(0, (int) IB_Settings::get('smuggler_fine_percent')) / 100)));
@@ -361,7 +361,7 @@ class IB_Ports {
         throw new IB_Game_Exception(sprintf(
             'Imperial customs caught you slipping into %s! You were fined %s credits, paid into the Crown\'s Fines Fund, and turned away. (Catch chance was %d%%.)',
             $port->port_name, IB_Game::fmt($fine), $chance
-        ), 'warning');
+        ), 'warning', true);    // the fine and the visit stand: keep them
     }
 
     public static function require_docked($p) {
@@ -406,7 +406,9 @@ class IB_Ports {
 
         // Nobody haggles over stolen goods.
         list($unit, $exp) = $den ? [$list, 0] : self::haggle($p, $port, $commodity, $mode, $list, (int) $offer);
-        $total = (int) round($unit * $qty);
+        $raw_total = round($unit * $qty);
+        if (!is_finite($raw_total) || $raw_total > (float) PHP_INT_MAX) throw new IB_Game_Exception('That deal is worth more credits than exist.');
+        $total = (int) $raw_total;
 
         // Claim the port's stock/demand first so two traders can't take the same units.
         $claimed = $wpdb->query($wpdb->prepare(
@@ -426,27 +428,43 @@ class IB_Ports {
             $p->smuggle_left = (int) $p->smuggle_left - $qty;
         }
 
+        // Undo the port's side if the pilot's side is refused. The action's transaction would roll
+        // it back anyway; this keeps the books straight even on a table that cannot roll back.
+        $restore = function () use ($wpdb, $col, $qty, $port, $den, $p) {
+            $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('ports') . " SET $col = $col + %d WHERE id = %d", $qty, $port->id));
+            if ($den) {
+                $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('players') . ' SET smuggle_left = smuggle_left + %d WHERE id = %d', $qty, $p->id));
+                $p->smuggle_left = (int) $p->smuggle_left + $qty;
+            }
+        };
+
         if ($mode === 'selling') {
+            // Credits out and cargo in as one guarded write: the pilot must still have the credits
+            // and the hold space at the moment it lands, not just when this request loaded.
             try {
-                IB_Player::spend_credits($p, $total);
+                IB_Player::spend($p, ['credits' => $total],
+                    $den ? [$commodity => $qty, 'experience' => 1, 'alignment' => -1] : [$commodity => $qty, 'experience' => 1 + $exp],
+                    [], sprintf('That costs %s credits and %s holds; your credits or hold space changed. Please try again.', IB_Game::fmt($total), IB_Game::fmt($qty)));
             } catch (IB_Game_Exception $e) {
-                $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('ports') . " SET $col = $col + %d WHERE id = %d", $qty, $port->id));
-                if ($den) {
-                    $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('players') . ' SET smuggle_left = smuggle_left + %d WHERE id = %d', $qty, $p->id));
-                    $p->smuggle_left = (int) $p->smuggle_left + $qty;
-                }
+                $restore();
                 throw $e;
             }
             if ($den) {
-                IB_Player::add($p, [$commodity => $qty, 'experience' => 1, 'alignment' => -1]);
                 $msg = sprintf('You stole %s %s at a cost effort of %s cr each (%s credits in bribes and gear). %s more units can slip out this visit.',
                     IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total), IB_Game::fmt(max(0, (int) $p->smuggle_left)));
                 return $msg;
             }
-            IB_Player::add($p, [$commodity => $qty, 'experience' => 1 + $exp]);
             $msg = sprintf('You bought %s %s at %s cr each for %s credits.', IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total));
         } else {
-            IB_Player::add($p, [$commodity => -$qty, 'credits' => $total, 'experience' => 1 + $exp]);
+            // The cargo must still be aboard when the sale lands; two sales fired together cannot
+            // both be paid for the same units.
+            try {
+                IB_Player::spend($p, [$commodity => $qty], ['credits' => $total, 'experience' => 1 + $exp], [],
+                    sprintf('You no longer carry %s units of %s.', IB_Game::fmt($qty), $label));
+            } catch (IB_Game_Exception $e) {
+                $restore();
+                throw $e;
+            }
             $msg = sprintf('You sold %s %s at %s cr each for %s credits.', IB_Game::fmt($qty), $label, IB_Game::fmt($unit), IB_Game::fmt($total));
         }
         if ($exp > 1) $msg .= ' "You drive a hard bargain, trader." (+' . $exp . ' experience)';
@@ -480,10 +498,10 @@ class IB_Ports {
 
         $key = self::haggle_key($p, $port, $commodity);
         if (get_transient($key . '_lock')) {
-            throw new IB_Game_Exception('The port master refuses to haggle with you again this hour. Trade at the listed price.', 'warning');
+            throw new IB_Game_Exception('The port master refuses to haggle with you again this hour. Trade at the listed price.', 'warning', true);
         }
         $state = get_transient($key);
-        if (!$state) $state = ['tol' => mt_rand(3, 10) / 100, 'attempts' => 0, 'counter' => 0];
+        if (!is_array($state)) $state = ['tol' => random_int(3, 10) / 100, 'attempts' => 0, 'counter' => 0];
 
         $ratio = abs($offer - $list) / $list;
         if ($ratio <= $state['tol']) {
@@ -496,15 +514,15 @@ class IB_Ports {
         if ($state['attempts'] >= $max) {
             delete_transient($key);
             set_transient($key . '_lock', 1, HOUR_IN_SECONDS);
-            throw new IB_Game_Exception('"You insult me! Get out of my port!" The port master will not haggle with you again this hour.', 'warning');
+            throw new IB_Game_Exception('"You insult me! Get out of my port!" The port master will not haggle with you again this hour.', 'warning', true);
         }
-        $shift = $list * $state['tol'] * mt_rand(40, 80) / 100;
+        $shift = $list * $state['tol'] * random_int(40, 80) / 100;
         $state['counter'] = (int) round($mode === 'selling' ? $list - $shift : $list + $shift);
         set_transient($key, $state, HOUR_IN_SECONDS);
         throw new IB_Game_Exception(sprintf(
             '"%s per unit? Ridiculous! I could do %s." (%d haggle attempt(s) left)',
             IB_Game::fmt($offer), IB_Game::fmt($state['counter']), $max - $state['attempts']
-        ), 'warning');
+        ), 'warning', true);    // the attempt is spent: keep the count
     }
 
     /** Price of buying $n more holds when the ship already has $current. Each hold costs a little more. */
@@ -544,9 +562,16 @@ class IB_Ports {
         if ($qty > $max) throw new IB_Game_Exception(sprintf('Your ship can only take %s more %s.', IB_Game::fmt($max), strtolower($label)));
 
         $cost = $item === 'holds' ? self::hold_cost($p->cargo_holds, $qty) : $unit * $qty;
-        IB_Player::spend_credits($p, $cost);
+        if (!is_numeric($cost) || (float) $cost > (float) PHP_INT_MAX) throw new IB_Game_Exception('That costs more credits than exist.');
+        $cost = (int) $cost;
         $col = ['holds' => 'cargo_holds', 'fighters' => 'fighters', 'shields' => 'shield_points', 'worldseed' => 'worldseeds', 'drones' => 'survey_drones', 'vending' => 'vending_machines'][$item];
-        IB_Player::add($p, [$col => $qty]);
+        // Credits out and hardware in as one guarded write, capped at the ship's limit as the row
+        // stands then, so parallel orders cannot overfill the hull. Holds are priced on the current
+        // count, so that count must not have moved underneath the price.
+        $opts = ['max' => [$col => (int) $p->$col + $max]];
+        if ($item === 'holds') $opts['eq'] = ['cargo_holds' => (int) $p->cargo_holds];
+        IB_Player::spend($p, ['credits' => $cost], [$col => $qty], $opts,
+            sprintf('That costs %s credits and needs room for %s more; your credits or ship changed. Please try again.', IB_Game::fmt($cost), IB_Game::fmt($qty)));
         $msg = sprintf('Purchased %s %s for %s credits.', IB_Game::fmt($qty), strtolower($label), IB_Game::fmt($cost));
         if ($item === 'vending') {
             $msg .= ' Land on one of your worlds and leave them there with the cargo transfer; each one feeds '
@@ -573,7 +598,9 @@ class IB_Ports {
         if (!empty($new['captain_only']) && !IB_Teams::is_captain($p)) throw new IB_Game_Exception('Only team captains may purchase a ' . $new['name'] . '.');
 
         $cost = max(0, $new['price'] - self::trade_in_value($p));
-        IB_Player::spend_credits($p, $cost);
+        if ($cost > (int) $p->credits) {
+            throw new IB_Game_Exception(sprintf('That costs %s credits; you only have %s.', IB_Game::fmt($cost), IB_Game::fmt($p->credits)));
+        }
 
         $holds = max($new['base_holds'], min((int) $p->cargo_holds, $new['max_holds']));
         // Anything that will not fit the new hull is left on the dock. Colonists are counted in
@@ -595,11 +622,17 @@ class IB_Ports {
             $berths = max(0, $holds - ($used($cargo) - IB_Player::colonist_holds($cargo['colonists'])));
             $cargo['colonists'] = min($cargo['colonists'], $berths * IB_Player::colonists_per_hold());
         }
-        IB_Player::update($p, array_merge($cargo, [
-            'ship_type' => $type, 'cargo_holds' => $holds,
-            'fighters' => min((int) $p->fighters, $new['max_fighters']),
-            'shield_points' => min((int) $p->shield_points, $new['max_shields']),
-        ]));
+        // The new hull replaces the cargo, fighters and shields outright, so the write only lands if
+        // none of them moved since this request read them; otherwise a trade landing at the same
+        // moment would be overwritten with the old figures. The price is charged in the same write.
+        $expect = ['ship_type' => (string) $p->ship_type, 'cargo_holds' => (int) $p->cargo_holds,
+                   'fighters' => (int) $p->fighters, 'shield_points' => (int) $p->shield_points, 'colonists' => (int) $p->colonists];
+        foreach (array_keys(IB_Game::COMMODITIES) as $k) $expect[$k] = (int) $p->$k;
+        IB_Player::set_if_unchanged($p, array_merge(array_map('intval', $cargo), [
+            'ship_type' => (string) $type, 'cargo_holds' => (int) $holds,
+            'fighters' => min((int) $p->fighters, (int) $new['max_fighters']),
+            'shield_points' => min((int) $p->shield_points, (int) $new['max_shields']),
+        ]), $expect, $cost, 'Your ship or credits changed while the sale was going through. Nothing was charged; please try again.');
         IB_Log::news('ship', sprintf('%s took delivery of a new %s.', $p->alias_name, $new['name']));
         return sprintf('Congratulations on your new %s! After trade-in it cost %s credits.', $new['name'], IB_Game::fmt($cost));
     }

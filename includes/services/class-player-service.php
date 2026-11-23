@@ -35,6 +35,7 @@ class IB_Player {
 
     public static function refresh($p) {
         $fresh = self::get($p->id);
+        if (!$fresh) return $p;
         foreach (get_object_vars($fresh) as $k => $v) $p->$k = $v;
         return $p;
     }
@@ -110,30 +111,40 @@ class IB_Player {
 
     public static function create($user_id, $alias, $ship_name) {
         global $wpdb;
-        $alias = trim(sanitize_text_field($alias));
-        $ship_name = trim(sanitize_text_field($ship_name));
+        $alias = IB_Names::clean($alias);
+        $ship_name = IB_Names::clean($ship_name);
         if (!IB_Settings::get('allow_new_players')) throw new IB_Game_Exception('New pilot registration is currently closed.');
         if (!IB_Game::universe_exists()) throw new IB_Game_Exception('The universe has not been created yet. Ask an administrator to forge the universe.');
         if (self::by_user($user_id)) throw new IB_Game_Exception('You already have a pilot.');
-        if (strlen($alias) < 3 || strlen($alias) > 41) throw new IB_Game_Exception('Your alias must be 3 to 41 characters.');
+        if (IB_Names::length($alias) < 3 || IB_Names::length($alias) > 41) throw new IB_Game_Exception('Your alias must be 3 to 41 characters.');
+        if (IB_Names::is_reserved($alias)) throw new IB_Game_Exception('That name belongs to the Imperium. Choose another alias.');
+        if (IB_Names::length($ship_name) > 41) throw new IB_Game_Exception('Ship names can be up to 41 characters.');
         if ($wpdb->get_var($wpdb->prepare('SELECT id FROM ' . IB_DB::t('players') . ' WHERE alias_name = %s', $alias))) {
             throw new IB_Game_Exception('That alias is already taken.');
         }
-        if ($ship_name === '') $ship_name = $alias . "'s Ship";
+        if ($ship_name === '') $ship_name = IB_Names::cut($alias . "'s Ship", 41);
         $s = IB_Settings::all();
         // The WordPress display name is deliberately not copied here. Other players only ever see
         // the alias, so the game has no use for it, and the less of it the game table holds the
         // less there is to leak. The real_name column stays for sites upgrading from older
         // versions; nothing reads it.
-        $wpdb->insert(IB_DB::t('players'), [
+        $inserted = $wpdb->insert(IB_DB::t('players'), [
             'user_id' => $user_id, 'alias_name' => $alias,
-            'ship_name' => substr($ship_name, 0, 41), 'ship_type' => IB_Ships::DEFAULT_TYPE,
+            'ship_name' => $ship_name, 'ship_type' => IB_Ships::DEFAULT_TYPE,
             'sector_id' => 1, 'fighters' => $s['starting_fighters'], 'shield_points' => $s['starting_shields'],
             'cargo_holds' => $s['starting_holds'], 'credits' => $s['starting_credits'],
             'turns_remaining' => $s['turns_per_day'], 'last_turn_reset' => IB_Game::today(),
             'created_at' => current_time('mysql'), 'last_seen' => current_time('mysql'),
         ]);
+        // The alias and user_id columns are UNIQUE, so a registration racing another one for the
+        // same alias (or a second tab) fails here rather than creating a duplicate.
+        if ($inserted === false && stripos((string) $wpdb->last_error, 'Duplicate') !== false) {
+            throw new IB_Game_Exception(stripos((string) $wpdb->last_error, 'user_id') !== false
+                ? 'You already have a pilot.' : 'That alias is already taken.');
+        }
+        IB_DB::check($inserted, 'player create');
         $id = (int) $wpdb->insert_id;
+        if ($id <= 0) IB_DB::check(false, 'player create: no insert id');
         self::mark_visited($id, 1);
         self::chart($id, self::warps_from(1));
         IB_Log::news('new_player', sprintf('%s has joined the galaxy as a new trader.', $alias));
@@ -187,30 +198,151 @@ class IB_Player {
         $p->credits -= $amount;
     }
 
-    /** Adds (or subtracts) values from integer columns, announcing any promotion that results. */
+    /**
+     * Adds (or subtracts) values from integer columns, announcing any promotion that results.
+     *
+     * For gains, and for losses the pilot has no say in (combat damage, a tithe). A loss can never
+     * take a column below zero: it saturates there, so two hits landing at once cannot leave a
+     * negative count behind. Alignment is the exception, as it is meant to go negative. Anything a
+     * pilot spends or hands over goes through spend() instead, which refuses rather than saturates.
+     */
     public static function add($p, array $deltas) {
         global $wpdb;
         $rank_before = isset($deltas['experience']) ? IB_Game::rank_title($p->experience) : null;
         $sets = [];
         foreach ($deltas as $col => $delta) {
             if (!in_array($col, self::COUNTERS, true)) continue;
-            $sets[] = $wpdb->prepare("$col = $col + %d", (int) $delta);
-            $p->$col += (int) $delta;
-        }
-        if ($sets) $wpdb->query('UPDATE ' . IB_DB::t('players') . ' SET ' . implode(', ', $sets) . $wpdb->prepare(' WHERE id = %d', $p->id));
-        if ($rank_before !== null) {
-            $rank_after = IB_Game::rank_title($p->experience);
-            if ($rank_after !== $rank_before) {
-                IB_Log::news('promotion', sprintf('%s has been raised to %s.', $p->alias_name, $rank_after));
-                IB_Messages::system($p->id, 'You have been promoted',
-                    sprintf('The Chancery has raised you from %s to %s. Congratulations, %s.', $rank_before, $rank_after, $rank_after));
+            $delta = (int) $delta;
+            if ($col === 'alignment' || $delta >= 0) {
+                $sets[] = $wpdb->prepare("$col = $col + %d", $delta);
+                $p->$col = (int) $p->$col + $delta;
+            } else {
+                $sets[] = $wpdb->prepare("$col = GREATEST(0, $col + %d)", $delta);
+                $p->$col = max(0, (int) $p->$col + $delta);
             }
         }
+        if ($sets) {
+            IB_DB::check($wpdb->query('UPDATE ' . IB_DB::t('players') . ' SET ' . implode(', ', $sets) . $wpdb->prepare(' WHERE id = %d', $p->id)), 'player add');
+        }
+        if ($rank_before !== null) self::announce_promotion($p, $rank_before);
+    }
+
+    /** SQL for "the holds this pilot uses", after optional changes to each cargo column. */
+    private static function holds_used_sql(array $deltas) {
+        global $wpdb;
+        $parts = [];
+        foreach (array_keys(IB_Game::COMMODITIES) as $key) {
+            $parts[] = $wpdb->prepare("($key + %d)", (int) ($deltas[$key] ?? 0));
+        }
+        $parts[] = $wpdb->prepare('CEIL((colonists + %d) / %d)', (int) ($deltas['colonists'] ?? 0), self::colonists_per_hold());
+        return '(' . implode(' + ', $parts) . ')';
+    }
+
+    /**
+     * Takes $costs from the pilot and grants $gains, in ONE guarded UPDATE, or changes nothing and
+     * throws. The guard sits in the WHERE clause, so it is checked against the row as it is at
+     * that instant rather than against the copy this request loaded: two requests fired together
+     * cannot both spend the same cargo, fighters or credits.
+     *
+     *  - every cost needs at least that much in the column;
+     *  - a gain of cargo or colonists needs the room for it in the holds, measured after the change;
+     *  - $opts['max'] = [col => ceiling] keeps a column at or below a ceiling after the change;
+     *  - $opts['eq'] = [col => value] requires a column to still hold the value this request saw.
+     *
+     * @param string $message what to tell the pilot if the guard fails
+     */
+    public static function spend($p, array $costs, array $gains = [], array $opts = [], $message = null) {
+        global $wpdb;
+        $sets = [];
+        $where = [$wpdb->prepare('id = %d', $p->id)];
+        $deltas = [];
+        foreach ($costs as $col => $n) {
+            if (!in_array($col, self::COUNTERS, true)) throw new LogicException("spend(): $col is not a counter");
+            $n = (int) $n;
+            if ($n < 0) throw new LogicException('spend(): a cost cannot be negative');
+            if ($n === 0) continue;
+            $deltas[$col] = ($deltas[$col] ?? 0) - $n;
+            $where[] = $wpdb->prepare("$col >= %d", $n);
+        }
+        foreach ($gains as $col => $n) {
+            if (!in_array($col, self::COUNTERS, true)) throw new LogicException("spend(): $col is not a counter");
+            $deltas[$col] = ($deltas[$col] ?? 0) + (int) $n;
+        }
+        foreach ($deltas as $col => $d) {
+            if ($d !== 0) $sets[] = $wpdb->prepare("$col = $col + %d", $d);
+        }
+        if (!$sets) return;
+        $cargo = array_merge(array_keys(IB_Game::COMMODITIES), ['colonists']);
+        foreach ($cargo as $col) {
+            if (($deltas[$col] ?? 0) > 0) {
+                $where[] = $wpdb->prepare(self::holds_used_sql($deltas) . ' <= cargo_holds + %d', (int) ($deltas['cargo_holds'] ?? 0));
+                break;
+            }
+        }
+        foreach ((array) ($opts['max'] ?? []) as $col => $max) {
+            if (!in_array($col, self::COUNTERS, true)) throw new LogicException("spend(): $col is not a counter");
+            $where[] = $wpdb->prepare("$col + %d <= %d", (int) ($deltas[$col] ?? 0), (int) $max);
+        }
+        foreach ((array) ($opts['eq'] ?? []) as $col => $value) {
+            if (!in_array($col, self::COUNTERS, true)) throw new LogicException("spend(): $col is not a counter");
+            $where[] = $wpdb->prepare("$col = %d", (int) $value);
+        }
+        $rank_before = isset($deltas['experience']) ? IB_Game::rank_title($p->experience) : null;
+        $ok = IB_DB::check($wpdb->query('UPDATE ' . IB_DB::t('players') . ' SET ' . implode(', ', $sets) . ' WHERE ' . implode(' AND ', $where)), 'player spend');
+        if (!$ok) {
+            self::refresh($p);
+            throw new IB_Game_Exception($message ?: 'Your ship\'s manifest changed while that order was going through. Check what you have and try again.');
+        }
+        foreach ($deltas as $col => $d) $p->$col = (int) $p->$col + $d;
+        if ($rank_before !== null) self::announce_promotion($p, $rank_before);
+    }
+
+    private static function announce_promotion($p, $rank_before) {
+        $rank_after = IB_Game::rank_title($p->experience);
+        if ($rank_after !== $rank_before) {
+            IB_Log::news('promotion', sprintf('%s has been raised to %s.', $p->alias_name, $rank_after));
+            IB_Messages::system($p->id, 'You have been promoted',
+                sprintf('The Chancery has raised you from %s to %s. Congratulations, %s.', $rank_before, $rank_after, $rank_after));
+        }
+    }
+
+    /**
+     * Writes absolute values to the pilot's row, charging $cost credits, only if every column in
+     * $expect still holds what this request saw. Used where a change replaces values outright (a
+     * new hull) and a relative update cannot express it: without the check, a trade landing at the
+     * same moment would be overwritten with the old cargo, duplicating it.
+     */
+    public static function set_if_unchanged($p, array $set, array $expect, $cost = 0, $message = null) {
+        global $wpdb;
+        $allowed = array_merge(self::COUNTERS, ['ship_type']);
+        $sets = [];
+        $where = [$wpdb->prepare('id = %d', $p->id)];
+        foreach ($set as $col => $value) {
+            if (!in_array($col, $allowed, true)) throw new LogicException("set_if_unchanged(): $col is not allowed");
+            $sets[] = is_int($value) ? $wpdb->prepare("$col = %d", $value) : $wpdb->prepare("$col = %s", (string) $value);
+        }
+        foreach ($expect as $col => $value) {
+            if (!in_array($col, $allowed, true)) throw new LogicException("set_if_unchanged(): $col is not allowed");
+            $where[] = is_int($value) ? $wpdb->prepare("$col = %d", $value) : $wpdb->prepare("$col = %s", (string) $value);
+        }
+        $cost = (int) $cost;
+        if ($cost > 0) {
+            if (isset($set['credits'])) throw new LogicException('set_if_unchanged(): credits set and charged');
+            $sets[] = $wpdb->prepare('credits = credits - %d', $cost);
+            $where[] = $wpdb->prepare('credits >= %d', $cost);
+        }
+        $ok = IB_DB::check($wpdb->query('UPDATE ' . IB_DB::t('players') . ' SET ' . implode(', ', $sets) . ' WHERE ' . implode(' AND ', $where)), 'player set');
+        if (!$ok) {
+            self::refresh($p);
+            throw new IB_Game_Exception($message ?: 'Your ship changed while that order was going through. Check what you have and try again.');
+        }
+        foreach ($set as $col => $value) $p->$col = $value;
+        if ($cost > 0) $p->credits = (int) $p->credits - $cost;
     }
 
     public static function update($p, array $data) {
         global $wpdb;
-        $wpdb->update(IB_DB::t('players'), $data, ['id' => $p->id]);
+        IB_DB::check($wpdb->update(IB_DB::t('players'), $data, ['id' => $p->id]), 'player update');
         foreach ($data as $k => $v) $p->$k = $v;
     }
 
@@ -400,16 +532,16 @@ class IB_Player {
         $qty = min((int) $qty, (int) $p->$commodity);
         if ($qty <= 0) throw new IB_Game_Exception('Nothing to jettison.');
         if ($commodity === 'colonists') {
-            self::add($p, ['colonists' => -$qty, 'alignment' => -$qty]);
+            self::spend($p, ['colonists' => $qty], ['alignment' => -$qty]);
             return sprintf('You released %s colonists into space. The Chancery will hear of this.', IB_Game::fmt($qty));
         }
-        self::add($p, [$commodity => -$qty]);
+        self::spend($p, [$commodity => $qty]);
         return sprintf('Jettisoned %s units of %s.', IB_Game::fmt($qty), IB_Game::label($commodity));
     }
 
     public static function rename_ship($p, $name) {
-        $name = trim(sanitize_text_field($name));
-        if ($name === '' || strlen($name) > 41) throw new IB_Game_Exception('Ship names must be 1 to 41 characters.');
+        $name = IB_Names::clean($name);
+        if ($name === '' || IB_Names::length($name) > 41) throw new IB_Game_Exception('Ship names must be 1 to 41 characters.');
         self::update($p, ['ship_name' => $name]);
         return 'Your ship is now registered as the ' . $name . '.';
     }
@@ -447,7 +579,20 @@ class IB_Player {
 
     public static function net_worth($p) {
         global $wpdb;
-        $s = IB_Settings::all();
+        $planets = $wpdb->get_row($wpdb->prepare(self::planet_worth_sql() . ' WHERE owner_player_id = %d', $p->id));
+        return self::worth_of($p, $planets, IB_Settings::all());
+    }
+
+    /** One aggregate row per owner (or one row, filtered by the caller) of everything on their worlds. */
+    private static function planet_worth_sql() {
+        return 'SELECT owner_player_id, COALESCE(SUM(bastion_vault),0) cr, COALESCE(SUM(fighters),0) f, COALESCE(SUM(colonists),0) col,
+                    COALESCE(SUM(ore),0) o, COALESCE(SUM(organics),0) g, COALESCE(SUM(equipment),0) e,
+                    COALESCE(SUM(vending_machines),0) vm, COALESCE(SUM(vending_fund),0) vf
+             FROM ' . IB_DB::t('planets');
+    }
+
+    /** Net worth from a pilot row and the aggregate of their worlds (null when they own none). */
+    private static function worth_of($p, $planets, array $s) {
         $c = IB_Game::COMMODITIES;
         $ship = self::ship($p);
         $worth = (int) $p->credits
@@ -455,18 +600,50 @@ class IB_Player {
             + (int) ($ship['price'] / 2) + $p->worldseeds * $s['price_worldseed']
             + (int) $p->vending_machines * $s['price_vending'];
         foreach (IB_Game::COMMODITIES as $key => $def) $worth += (int) $p->$key * $def['base'];
-        $planets = $wpdb->get_row($wpdb->prepare(
-            'SELECT COALESCE(SUM(bastion_vault),0) cr, COALESCE(SUM(fighters),0) f, COALESCE(SUM(colonists),0) col,
-                    COALESCE(SUM(ore),0) o, COALESCE(SUM(organics),0) g, COALESCE(SUM(equipment),0) e,
-                    COALESCE(SUM(vending_machines),0) vm, COALESCE(SUM(vending_fund),0) vf
-             FROM ' . IB_DB::t('planets') . ' WHERE owner_player_id = %d', $p->id
-        ));
         if ($planets) {
             $worth += $planets->cr + $planets->f * $s['price_fighter'] + $planets->col * $s['price_colonist']
                 + $planets->o * $c['ore']['base'] + $planets->g * $c['organics']['base'] + $planets->e * $c['equipment']['base']
                 + $planets->vm * $s['price_vending'] + $planets->vf;
         }
         return $worth;
+    }
+
+    /**
+     * Every pilot with their net worth in $pilot->worth, in two queries however many pilots there
+     * are, rather than one query per pilot. The public home page reads this through a short cache
+     * ($cached = true), so an anonymous visitor cannot make the database do work in proportion to
+     * the number of pilots on every request.
+     *
+     * @return object[] pilot rows keyed by id, each with ->worth
+     */
+    public static function all_with_worth($cached = false) {
+        global $wpdb;
+        $key = 'ib_pilot_worth';
+        if ($cached) {
+            // Cached as arrays of scalars, never objects, so nothing an options read unserialises
+            // can be more than plain data.
+            $hit = get_transient($key);
+            if (is_array($hit)) {
+                $out = [];
+                foreach ($hit as $id => $row) {
+                    if (is_array($row)) $out[(int) $id] = (object) $row;
+                }
+                return $out;
+            }
+        }
+        $s = IB_Settings::all();
+        $planets = [];
+        foreach ((array) $wpdb->get_results(self::planet_worth_sql() . ' WHERE owner_player_id > 0 GROUP BY owner_player_id') as $row) {
+            $planets[(int) $row->owner_player_id] = $row;
+        }
+        $out = [];
+        foreach ((array) $wpdb->get_results('SELECT id, alias_name, ship_type, team_id, experience, alignment, kills, deaths, credits, fighters, shield_points,
+                worldseeds, vending_machines, ' . implode(', ', array_keys(IB_Game::COMMODITIES)) . ' FROM ' . IB_DB::t('players')) as $pl) {
+            $pl->worth = self::worth_of($pl, $planets[(int) $pl->id] ?? null, $s);
+            $out[(int) $pl->id] = $pl;
+        }
+        if ($cached) set_transient($key, array_map('get_object_vars', $out), 5 * MINUTE_IN_SECONDS);
+        return $out;
     }
 
     /** Ship destroyed: the pilot ejects to Aurelia in a replacement Freetrader and is grounded for the rest of the day. */

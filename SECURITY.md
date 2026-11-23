@@ -56,8 +56,30 @@ flawless: it is what to check, and where a mistake would most likely be.
   require `manage_options` plus their own nonce. Hiding a link is never treated as a control.
 - **Redirects are validated** with `wp_validate_redirect()`, so a crafted form cannot bounce a
   player off-site.
-- **Turn, credit and stock changes are atomic** single UPDATE statements with the guard in the
-  WHERE clause, so a double-submitted form cannot spend the same turn or credits twice.
+- **Every change to what a pilot owns is a guarded write.** Turns, credits, cargo, colonists,
+  fighters, Worldseeds and drones are taken with one UPDATE whose WHERE clause requires the amount
+  to be there at that instant (`IB_Player::spend()`), and gains of cargo are guarded on hold space
+  and hull limits the same way. Fleets are reduced relatively, never written back from an earlier
+  read, and a new hull is written only if nothing changed since it was priced. Two requests fired
+  together therefore cannot both spend, sell, unload or recall the same thing. The JavaScript
+  double-submit guard is a convenience, not a control.
+- **Each game action is one database transaction.** A refusal or error part-way through rolls back
+  every write the action had made. The few refusals that are themselves the outcome (a customs fine,
+  a spent haggle attempt, a counted wrong team password) are committed deliberately. Database errors
+  go to the PHP error log, never to the page, and are never reported to the player as success.
+- **Each form's nonce is minted for its own action**, so a nonce taken from one form cannot be
+  replayed against another; rejected nonces are recorded in the admin log (at most once every ten
+  minutes per user).
+- **Teams need the captain's approval.** A team password only puts a request in front of the
+  captain. Passwords are at least 10 characters, attempts against one team are rate limited (20 per
+  15 minutes, counted atomically), and every wrong password is logged. Captains can change it.
+- **Names are measured in characters and cleaned of invisible characters** (zero-width and
+  bidirectional controls), and aliases and team names that impersonate the game itself (for
+  example "The Imperial Chancery") are refused. Aliases are unique in the database.
+- **Messages and team posts are limited on the server** (5,000 and 2,000 characters, 20 per pilot
+  every 10 minutes), not only by the form.
+- **Public pages do a bounded amount of work.** The leaderboard is computed with two queries
+  whatever the number of pilots, and the public copy is cached for five minutes.
 - **Numbers are bounded before they are used.** A posted integer is clamped to 1e15, far above
   anything the game asks for and far enough below `PHP_INT_MAX` that arithmetic on it stays exact.
   That matters because a value near the maximum overflows into a float the moment it is multiplied
@@ -98,6 +120,13 @@ strings, and the result is checked for credits or cargo that were not paid for a
 sitting at exactly 2147483647. That probe found a real one: an oversized Vault deposit cost
 nothing, because the price overflowed to zero on the way to being charged. It is fixed, and the
 check that found it runs against every release.
+
+Release 1.26.0 followed an OWASP Top 10 (2021) review that found that the cargo, fighter,
+Worldseed and drone changes were checked against the copy of the pilot a request had loaded rather
+than against the database row, so identical requests fired in parallel could duplicate them, and
+through a sale, credits. Every such change is now a guarded write (above). The check to add to
+every release from here on: fire each spending action 20 times in parallel with one valid nonce,
+and confirm that only the affordable number succeed and no column goes negative.
 
 A later pass went looking for five specific weakness classes, and is re-run against each release:
 

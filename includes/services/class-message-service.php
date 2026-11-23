@@ -5,20 +5,38 @@ if (!defined('ABSPATH')) exit;
  * Private sub-space messages between pilots, plus system notices (sender 0).
  */
 class IB_Messages {
+    /** Longest message body and subject, in characters; the form's limits, enforced here too. */
+    const MAX_TEXT = 5000;
+    const MAX_SUBJECT = 120;
+
+    /** Messages and team posts a pilot may send per window. */
+    const RATE_LIMIT = 20;
+    const RATE_WINDOW = 10 * MINUTE_IN_SECONDS;
+
+    /** Counts one message against the pilot's allowance, or refuses it. */
+    public static function rate_limit($p) {
+        if (!IB_DB::rate_limit('players', $p->id, 'msg_count', 'msg_window', self::RATE_LIMIT, self::RATE_WINDOW)) {
+            throw new IB_Game_Exception(sprintf('Sub-space relays are busy: you can send %d messages every %d minutes. Try again shortly.',
+                self::RATE_LIMIT, self::RATE_WINDOW / MINUTE_IN_SECONDS));
+        }
+    }
 
     public static function send($p, $recipient_id, $subject, $text) {
         global $wpdb;
         $recipient = IB_Player::get($recipient_id);
         if (!$recipient) throw new IB_Game_Exception('Choose a pilot to send to.');
         if ((int) $recipient->id === (int) $p->id) throw new IB_Game_Exception('Talking to yourself again?');
-        $subject = trim(sanitize_text_field($subject));
+        $subject = IB_Names::clean($subject);
         $text = trim(sanitize_textarea_field($text));
         if ($text === '') throw new IB_Game_Exception('Write a message first.');
-        $wpdb->insert(IB_DB::t('messages'), [
+        if (IB_Names::length($subject) > self::MAX_SUBJECT) throw new IB_Game_Exception(sprintf('Subjects can be up to %d characters.', self::MAX_SUBJECT));
+        if (mb_strlen($text, 'UTF-8') > self::MAX_TEXT) throw new IB_Game_Exception(sprintf('Messages can be up to %s characters.', IB_Game::fmt(self::MAX_TEXT)));
+        self::rate_limit($p);
+        IB_DB::check($wpdb->insert(IB_DB::t('messages'), [
             'sender_player_id' => $p->id, 'recipient_player_id' => $recipient->id, 'team_id' => 0,
-            'subject' => substr($subject !== '' ? $subject : '(no subject)', 0, 120),
+            'subject' => $subject !== '' ? $subject : '(no subject)',
             'message_text' => $text, 'created_at' => current_time('mysql'),
-        ]);
+        ]), 'message send');
         return sprintf('Message transmitted to %s.', $recipient->alias_name);
     }
 
@@ -26,7 +44,7 @@ class IB_Messages {
         global $wpdb;
         $wpdb->insert(IB_DB::t('messages'), [
             'sender_player_id' => 0, 'recipient_player_id' => $recipient_id, 'team_id' => 0,
-            'subject' => substr($subject, 0, 120), 'message_text' => $text, 'created_at' => current_time('mysql'),
+            'subject' => IB_Names::cut($subject, self::MAX_SUBJECT), 'message_text' => $text, 'created_at' => current_time('mysql'),
         ]);
     }
 
