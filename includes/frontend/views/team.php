@@ -11,13 +11,18 @@ $team = (int) $p->team_id ? IB_Teams::get($p->team_id) : null;
             <p>Teammates share planets and sector fighters, can't attack each other, and rank together.</p>
             <?php echo IB_UI::form_open('team_create', 'ib-stack'); ?>
                 <label>Team name <input type="text" name="team_name" maxlength="41" required></label>
-                <label>Team password <input type="password" name="password" minlength="4" required autocomplete="new-password"></label>
+                <label>Team password <input type="password" name="password" minlength="<?php echo (int) IB_Teams::MIN_PASSWORD; ?>" maxlength="200" required autocomplete="new-password"></label>
+                <p class="ib-small ib-dim">At least <?php echo (int) IB_Teams::MIN_PASSWORD; ?> characters. Pilots who know it can ask to join; you approve each one.</p>
                 <button type="submit" class="ib-btn">Found team</button>
             </form>
         </div>
         <div class="ib-panel">
             <h2>Join a team</h2>
-            <?php if (!$teams) : ?>
+            <?php $ib_req = (int) $p->team_request_id ? IB_Teams::get($p->team_request_id) : null; ?>
+            <?php if ($ib_req) : ?>
+                <p>You have asked to join <strong><?php echo esc_html($ib_req->team_name); ?></strong>. Its captain will accept or decline.</p>
+                <p><?php echo IB_UI::button('team_cancel_request', 'Withdraw request', [], 'ib-btn-alt'); ?></p>
+            <?php elseif (!$teams) : ?>
                 <p class="ib-dim">No teams exist yet. Be the first!</p>
             <?php else : ?>
                 <?php echo IB_UI::form_open('team_join', 'ib-stack'); ?>
@@ -28,10 +33,10 @@ $team = (int) $p->team_id ? IB_Teams::get($p->team_id) : null;
                             <?php endforeach; ?>
                         </select>
                     </label>
-                    <label>Password <input type="password" name="password" required autocomplete="off"></label>
-                    <button type="submit" class="ib-btn">Join</button>
+                    <label>Password <input type="password" name="password" maxlength="200" required autocomplete="off"></label>
+                    <button type="submit" class="ib-btn">Ask to join</button>
                 </form>
-                <p class="ib-small ib-dim">Ask the team's captain for the password.</p>
+                <p class="ib-small ib-dim">Ask the team's captain for the password. The captain then approves your request.</p>
             <?php endif; ?>
         </div>
     </div>
@@ -69,6 +74,37 @@ $team = (int) $p->team_id ? IB_Teams::get($p->team_id) : null;
             <?php if ($captain) echo IB_UI::button('team_disband', 'Disband team', [], 'ib-btn-danger', 'Disband the team permanently?'); ?>
         </p>
     </div>
+
+    <?php if ($captain) : $ib_requests = IB_Teams::requests($team->id); ?>
+    <div class="ib-panel">
+        <h3>Requests to join</h3>
+        <?php if (!$ib_requests) : ?>
+            <p class="ib-dim">No pilots are waiting.</p>
+        <?php else : ?>
+            <table class="ib-table">
+                <thead><tr><th>Pilot</th><th>Asked</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($ib_requests as $ib_r) : ?>
+                    <tr>
+                        <td><?php echo esc_html(IB_Game::rank_title($ib_r->experience) . ' ' . $ib_r->alias_name); ?></td>
+                        <td><?php echo esc_html(IB_UI::time_ago($ib_r->team_request_at)); ?></td>
+                        <td>
+                            <?php echo IB_UI::button('team_accept', 'Accept', ['member_id' => $ib_r->id], 'ib-btn-small', 'Accept ' . $ib_r->alias_name . '? Teammates share planets, Vaults and fighters.'); ?>
+                            <?php echo IB_UI::button('team_decline', 'Decline', ['member_id' => $ib_r->id], 'ib-btn-small ib-btn-alt'); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+        <h3>Team password</h3>
+        <p class="ib-small ib-dim">Change it after removing a member. At least <?php echo (int) IB_Teams::MIN_PASSWORD; ?> characters.</p>
+        <?php echo IB_UI::form_open('team_password', 'ib-inline'); ?>
+            <input type="password" name="password" minlength="<?php echo (int) IB_Teams::MIN_PASSWORD; ?>" maxlength="200" required autocomplete="new-password" aria-label="New team password">
+            <button type="submit" class="ib-btn ib-btn-small">Change password</button>
+        </form>
+    </div>
+    <?php endif; ?>
 
     <div class="ib-panel">
         <h3>Team planets</h3>

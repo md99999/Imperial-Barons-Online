@@ -28,6 +28,9 @@ class IB_Maintenance {
         }
     }
 
+    /** Days of admin log kept by daily maintenance. */
+    const ADMIN_LOG_DAYS = 180;
+
     /** WP-Cron entry points, so the log can say what started a run. */
     public static function cron_daily() {
         self::daily(false, 'wpcron');
@@ -231,8 +234,12 @@ class IB_Maintenance {
         $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('news') . ' WHERE created_at < %s', $cutoff));
         $mail_cutoff = date('Y-m-d H:i:s', current_time('timestamp') - 30 * DAY_IN_SECONDS);
         $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('messages') . ' WHERE is_read = 1 AND created_at < %s', $mail_cutoff));
+        // The admin log keeps half a year: long enough to look back on an incident, short enough
+        // that the table cannot grow without bound.
+        $log_cutoff = date('Y-m-d H:i:s', current_time('timestamp') - self::ADMIN_LOG_DAYS * DAY_IN_SECONDS);
+        $wpdb->query($wpdb->prepare('DELETE FROM ' . IB_DB::t('admin_log') . ' WHERE created_at < %s', $log_cutoff));
         update_option('ib_last_daily', current_time('mysql'), false);
-        return sprintf('Daily maintenance: turns reset, %s, colonies grew, the factors bought %s units from %d world(s) for %s credits, vending machines restocked on %d world(s)%s, old news and mail purged.',
+        return sprintf('Daily maintenance: turns reset, %s, colonies grew, the factors bought %s units from %d world(s) for %s credits, vending machines restocked on %d world(s)%s, old news, mail and admin log entries purged.',
             self::bounty_summary($bounty),
             IB_Game::fmt($sale['units']), $sale['planets'], IB_Game::fmt($sale['credits']), $vending['planets'],
             $vending['deserted'] ? sprintf(' (%s hungry fighters deserted)', IB_Game::fmt($vending['deserted'])) : '');

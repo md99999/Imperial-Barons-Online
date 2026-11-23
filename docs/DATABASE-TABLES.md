@@ -2,12 +2,12 @@ All tables use the site's table prefix (shown here as `wp_`). The schema lives i
 
 | Table | Contents |
 |---|---|
-| wp_ib_players | one row per pilot, linked to a WordPress user: location, ship, cargo, credits, turns, experience, alignment; `last_bounty` is the last day the Imperial Bounty was paid to that pilot |
+| wp_ib_players | one row per pilot, linked to a WordPress user: location, ship, cargo, credits, turns, experience, alignment; `last_bounty` is the last day the Imperial Bounty was paid to that pilot; `team_request_id`/`team_request_at` hold a request to join a team awaiting the captain; `msg_count`/`msg_window` rate-limit messages and team posts. `alias_name` is unique |
 | wp_ib_sectors | sector id, map x/y, nebula name, Imperial Core flag (`is_core`), beacon |
 | wp_ib_warps | directed warp lanes (from_sector, to_sector) |
 | wp_ib_ports | port per sector: class 0-9, per-commodity quantity and maximum |
 | wp_ib_planets | planets: class, owner, team, colonists, stock, fighters, bastion level, vault |
-| wp_ib_teams | teams: name, password hash, captain, combat medals |
+| wp_ib_teams | teams: name, password hash, captain, combat medals; `join_attempts`/`join_window` rate-limit password attempts against the team |
 | wp_ib_messages | private messages (recipient) and team channel posts (team_id) |
 | wp_ib_fleets | deployed fighters: player-owned, or alien factions (owner 0) |
 | wp_ib_explored | which sectors each pilot has visited (drives the map and computer) |

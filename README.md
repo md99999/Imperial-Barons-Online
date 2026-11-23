@@ -89,8 +89,9 @@ plan carefully and make every turn count.
 
 ## Requirements
 
-- WordPress 5.8 or later
-- PHP 7.4 or later
+- WordPress 6.4 or later
+- PHP 8.1 or later (earlier PHP releases no longer receive security fixes)
+- An InnoDB database (the WordPress default), so each game action can run as one transaction
 - MySQL 5.7+ / 8.x or MariaDB 10.3+ (the standard WordPress database)
 
 Works with both classic and block themes (tested with Twenty Twenty-Five).
@@ -416,7 +417,8 @@ Whichever you use, the zip should contain one top-level folder named `imperial-b
 - **Updating:** replace the plugin folder with the new version. Database changes are applied
   automatically on the next page load.
 - **Deactivating** stops the scheduled jobs but keeps all game data.
-- **Deleting** the plugin from the Plugins screen removes all game tables and settings.
+- **Deleting** the plugin from the Plugins screen removes all game tables, settings, cached data
+  and scheduled jobs, on every site of a multisite network.
 
 ---
 

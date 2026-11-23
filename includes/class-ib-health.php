@@ -250,7 +250,9 @@ class IB_Health {
         }
         $url = plugins_url('.git/HEAD', IB_PATH . self::SLUG . '.php');
         // Follow redirects, or a site that sends http to https would look safe when it is not.
-        $response = wp_remote_get($url, ['timeout' => 5, 'redirection' => 3, 'sslverify' => false]);
+        // Certificates are verified as usual. A site whose certificate this server cannot verify
+        // gets "could not be checked" rather than an answer an interceptor could have forged.
+        $response = wp_remote_get($url, ['timeout' => 5, 'redirection' => 3]);
         if (is_wp_error($response)) {
             $result = null;
         } else {

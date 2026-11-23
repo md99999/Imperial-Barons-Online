@@ -29,12 +29,11 @@ $has_universe = IB_Game::universe_exists();
 <?php $ib_help_open = true; include IB_PATH . 'includes/frontend/views/_how-to-play.php'; ?>
 
 <?php if ($has_universe) :
-    $players = $wpdb->get_results('SELECT * FROM ' . IB_DB::t('players'));
-    foreach ($players as $pl) $pl->worth = IB_Player::net_worth($pl);
+    $players = array_values(IB_Player::all_with_worth(true));
     usort($players, function ($a, $b) { return $b->worth <=> $a->worth; });
     $leaders = array_slice($players, 0, 10);
     $teams = IB_Teams::all();
-    foreach ($teams as $t) $t->worth = IB_Teams::net_worth($t->id);
+    foreach ($teams as $t) $t->worth = IB_Teams::net_worth($t->id, $players);
     usort($teams, function ($a, $b) { return $b->worth <=> $a->worth; });
     $news = IB_Messages::news(6);
     ?>

@@ -129,7 +129,7 @@ class IB_Discovery {
     public static function launch_drone($p) {
         if ((int) $p->survey_drones < 1) throw new IB_Game_Exception('You have no survey drones. Buy them at the Aurelian Armory or the Imperial Drydock.');
         $sectors = array_keys(IB_Pathfinder::distances(null, (int) $p->sector_id, self::DRONE_RADIUS));
-        IB_Player::add($p, ['survey_drones' => -1]);
+        IB_Player::spend($p, ['survey_drones' => 1], [], [], 'You have no survey drones left.');
         $added = IB_Player::chart($p->id, $sectors);
         return sprintf('Your survey drone sweeps every sector within %d warps: %d new sectors charted.', self::DRONE_RADIUS, $added);
     }

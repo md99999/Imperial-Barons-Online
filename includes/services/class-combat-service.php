@@ -17,8 +17,8 @@ class IB_Combat {
         $att = max(0, (int) $att);
         $def_fighters = max(0, (int) $def_fighters);
         $def_shields = max(0, (int) $def_shields);
-        $a_unit = $att_odds * mt_rand(85, 115) / 100;
-        $d_unit = $def_odds * mt_rand(85, 115) / 100;
+        $a_unit = $att_odds * random_int(85, 115) / 100;
+        $d_unit = $def_odds * random_int(85, 115) / 100;
 
         $strength = $att * $a_unit;
         $shield_hit = min($def_shields, $strength);
@@ -47,6 +47,9 @@ class IB_Combat {
         if ($fighters <= 0) throw new IB_Game_Exception('Commit at least one fighter.');
         if ($fighters > (int) $p->fighters) throw new IB_Game_Exception(sprintf('You only have %s fighters.', IB_Game::fmt($p->fighters)));
         IB_Player::spend_turns($p, (int) IB_Settings::get('attack_turn_cost'));
+        // The committed fighters leave the ship before the battle, with a guard, so the same
+        // fighters cannot be sent into several attacks fired at once. Survivors come back after.
+        IB_Player::spend($p, ['fighters' => $fighters], [], [], 'Those fighters are already committed elsewhere.');
         return $fighters;
     }
 
@@ -59,7 +62,7 @@ class IB_Combat {
         $fighters = self::prepare_attack($p, $fighters);
 
         $r = self::resolve($fighters, IB_Player::ship($p)['off'], $target->fighters, $target->shield_points, IB_Player::ship($target)['def']);
-        IB_Player::add($p, ['fighters' => -$r['att_lost'], 'experience' => (int) ceil($r['def_fighters_lost'] / 10)]);
+        IB_Player::add($p, ['fighters' => $fighters - $r['att_lost'], 'experience' => (int) ceil($r['def_fighters_lost'] / 10)]);
         IB_Player::add($target, ['fighters' => -$r['def_fighters_lost'], 'shield_points' => -$r['def_shields_lost']]);
 
         $summary = sprintf('You lost %s fighters. %s lost %s fighters and %s shield points.',
@@ -105,15 +108,18 @@ class IB_Combat {
         return $f ? $f['odds'] : 1.0;
     }
 
+    /**
+     * Takes fighters from a fleet with a relative, floored update rather than writing back a
+     * count worked out from an earlier read, so simultaneous losses all count and no request can
+     * restore fighters another has already removed. An emptied fleet is deleted.
+     * @return int fighters left
+     */
     private static function reduce_fleet($fleet, $lost) {
         global $wpdb;
-        $left = max(0, (int) $fleet->fighter_count - (int) $lost);
-        if ($left === 0) {
-            $wpdb->delete(IB_DB::t('fleets'), ['id' => $fleet->id]);
-        } else {
-            $wpdb->update(IB_DB::t('fleets'), ['fighter_count' => $left], ['id' => $fleet->id]);
-        }
-        return $left;
+        $t = IB_DB::t('fleets');
+        IB_DB::check($wpdb->query($wpdb->prepare("UPDATE $t SET fighter_count = GREATEST(0, fighter_count - %d) WHERE id = %d", max(0, (int) $lost), $fleet->id)), 'fleet loss');
+        $wpdb->query($wpdb->prepare("DELETE FROM $t WHERE id = %d AND fighter_count = 0", $fleet->id));
+        return (int) $wpdb->get_var($wpdb->prepare("SELECT fighter_count FROM $t WHERE id = %d", $fleet->id));
     }
 
     public static function attack_fleet($p, $fleet_id, $fighters) {
@@ -127,7 +133,7 @@ class IB_Combat {
         $r = self::resolve($fighters, IB_Player::ship($p)['off'], $fleet->fighter_count, 0, self::fleet_odds($fleet));
         $killed = $r['def_fighters_lost'];
         $left = self::reduce_fleet($fleet, $killed);
-        $deltas = ['fighters' => -$r['att_lost'], 'experience' => (int) ceil($killed / 10)];
+        $deltas = ['fighters' => $fighters - $r['att_lost'], 'experience' => (int) ceil($killed / 10)];
         $msg = sprintf('You lost %s fighters and destroyed %s %s fighters.', IB_Game::fmt($r['att_lost']), IB_Game::fmt($killed), $owner);
 
         if (!(int) $fleet->owner_player_id) {
@@ -166,9 +172,13 @@ class IB_Combat {
 
         global $wpdb;
         $r = self::resolve($fighters, IB_Player::ship($p)['off'], $planet->fighters, 0, IB_Planets::defense_odds($planet));
-        $left = max(0, (int) $planet->fighters - $r['def_fighters_lost']);
-        $wpdb->update(IB_DB::t('planets'), ['fighters' => $left], ['id' => $planet->id]);
-        IB_Player::add($p, ['fighters' => -$r['att_lost'], 'experience' => (int) ceil($r['def_fighters_lost'] / 10)]);
+        // Relative and floored at zero, so two attacks landing together both count and neither
+        // writes back a stale garrison.
+        IB_DB::check($wpdb->query($wpdb->prepare(
+            'UPDATE ' . IB_DB::t('planets') . ' SET fighters = GREATEST(0, fighters - %d) WHERE id = %d', (int) $r['def_fighters_lost'], $planet->id
+        )), 'planet garrison');
+        $left = (int) $wpdb->get_var($wpdb->prepare('SELECT fighters FROM ' . IB_DB::t('planets') . ' WHERE id = %d', $planet->id));
+        IB_Player::add($p, ['fighters' => $fighters - $r['att_lost'], 'experience' => (int) ceil($r['def_fighters_lost'] / 10)]);
 
         $msg = sprintf('You lost %s fighters. The planet lost %s fighters (%s remain).',
             IB_Game::fmt($r['att_lost']), IB_Game::fmt($r['def_fighters_lost']), IB_Game::fmt($left));
@@ -249,16 +259,17 @@ class IB_Combat {
             if (!self::fleet_is_friendly($p, $fleet)) throw new IB_Game_Exception('Hostile fighters hold this sector. Destroy them first.');
             if ((int) $fleet->owner_player_id === (int) $p->id) $existing = $fleet;
         }
-        IB_Player::add($p, ['fighters' => -$qty]);
+        // Off the ship with a guard first, so the same fighters cannot be deployed twice.
+        IB_Player::spend($p, ['fighters' => $qty], [], [], sprintf('You no longer have %s fighters aboard.', IB_Game::fmt($qty)));
         if ($existing) {
-            $wpdb->query($wpdb->prepare(
+            IB_DB::check($wpdb->query($wpdb->prepare(
                 'UPDATE ' . IB_DB::t('fleets') . ' SET fighter_count = fighter_count + %d, fleet_mode = %s WHERE id = %d', $qty, $mode, $existing->id
-            ));
+            )), 'fleet deploy');
         } else {
-            $wpdb->insert(IB_DB::t('fleets'), [
+            IB_DB::check($wpdb->insert(IB_DB::t('fleets'), [
                 'faction' => '', 'owner_player_id' => $p->id, 'team_id' => (int) $p->team_id, 'sector_id' => $p->sector_id,
                 'fighter_count' => $qty, 'fleet_mode' => $mode, 'created_at' => current_time('mysql'),
-            ]);
+            ]), 'fleet deploy');
         }
         if ($qty >= 100) {
             IB_Log::news('combat', sprintf('%s %s garrisoned sector %d with %s %s fighters.',
@@ -277,8 +288,21 @@ class IB_Combat {
         $room = IB_Player::ship($p)['max_fighters'] - (int) $p->fighters;
         if ($qty <= 0) throw new IB_Game_Exception('Enter a quantity greater than zero.');
         if ($qty > $room) throw new IB_Game_Exception(sprintf('Your ship can only carry %s more fighters.', IB_Game::fmt(max(0, $room))));
-        self::reduce_fleet($fleet, $qty);
-        IB_Player::add($p, ['fighters' => $qty]);
+        // Taken from the fleet with a guard (the fleet must still hold them), then put aboard with
+        // a guard on the hull's limit. Two recalls fired together cannot both collect one fleet.
+        $t = IB_DB::t('fleets');
+        $took = IB_DB::check($wpdb->query($wpdb->prepare(
+            "UPDATE $t SET fighter_count = fighter_count - %d WHERE id = %d AND fighter_count >= %d", $qty, $fleet->id, $qty
+        )), 'fleet recall');
+        if (!$took) throw new IB_Game_Exception('Those fighters have already been recalled or lost.');
+        try {
+            IB_Player::spend($p, [], ['fighters' => $qty], ['max' => ['fighters' => (int) IB_Player::ship($p)['max_fighters']]],
+                'Your ship no longer has room for that many fighters.');
+        } catch (IB_Game_Exception $e) {
+            $wpdb->query($wpdb->prepare("UPDATE $t SET fighter_count = fighter_count + %d WHERE id = %d", $qty, $fleet->id));
+            throw $e;
+        }
+        $wpdb->query($wpdb->prepare("DELETE FROM $t WHERE id = %d AND fighter_count = 0", $fleet->id));
         return sprintf('Recalled %s fighters to your ship.', IB_Game::fmt($qty));
     }
 

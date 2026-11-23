@@ -167,19 +167,37 @@ class IB_Planets {
         if ($dir === 'take') {
             $room = self::ship_room($p, $what);
             if ($qty > $room) throw new IB_Game_Exception(sprintf('Your ship only has room for %s more.', IB_Game::fmt(max(0, $room))));
-            $ok = $wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what - %d WHERE id = %d AND $what >= %d", $qty, $planet->id, $qty));
+            $ok = IB_DB::check($wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what - %d WHERE id = %d AND $what >= %d", $qty, $planet->id, $qty)), 'planet take');
             if (!$ok) throw new IB_Game_Exception('The planet does not have that many.');
-            IB_Player::add($p, [$ship_col => $qty]);
+            // The ship's side is guarded too: hold space, or the hull's fighter and crate limits,
+            // as they stand when the write lands.
+            $opts = [];
+            if ($what === 'fighters') $opts['max'] = ['fighters' => (int) IB_Player::ship($p)['max_fighters']];
+            if ($what === 'vending_machines') $opts['max'] = ['vending_machines' => IB_Ports::MAX_VENDING_CARRIED];
+            try {
+                IB_Player::spend($p, [], [$ship_col => $qty], $opts, 'Your ship no longer has room for that many.');
+            } catch (IB_Game_Exception $e) {
+                $wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what + %d WHERE id = %d", $qty, $planet->id));
+                throw $e;
+            }
             return sprintf('Loaded %s %s onto your ship.', IB_Game::fmt($qty), IB_Game::label($what));
         }
+        if ($dir !== 'leave') throw new IB_Game_Exception('Choose to load or unload.');
 
         if ($qty > (int) $p->$ship_col) throw new IB_Game_Exception(sprintf('You only carry %s %s.', IB_Game::fmt($p->$ship_col), IB_Game::label($what)));
-        if ($what === 'colonists') {
-            $max = self::CLASSES[$planet->planet_class]['max_colonists'];
-            if ($planet->colonists + $qty > $max) throw new IB_Game_Exception(sprintf('This planet can only support %s colonists.', IB_Game::fmt($max)));
+        $max = $what === 'colonists' ? (int) self::CLASSES[$planet->planet_class]['max_colonists'] : 0;
+        if ($what === 'colonists' && $planet->colonists + $qty > $max) {
+            throw new IB_Game_Exception(sprintf('This planet can only support %s colonists.', IB_Game::fmt($max)));
         }
-        IB_Player::add($p, [$ship_col => -$qty]);
-        $wpdb->query($wpdb->prepare("UPDATE $t SET $what = $what + %d WHERE id = %d", $qty, $planet->id));
+        // Off the ship first, guarded, so the same cargo cannot be unloaded twice by two requests.
+        IB_Player::spend($p, [$ship_col => $qty], [], [], sprintf('You no longer carry %s %s.', IB_Game::fmt($qty), IB_Game::label($what)));
+        $sql = $what === 'colonists'
+            ? $wpdb->prepare("UPDATE $t SET colonists = colonists + %d WHERE id = %d AND colonists + %d <= %d", $qty, $planet->id, $qty, $max)
+            : $wpdb->prepare("UPDATE $t SET $what = $what + %d WHERE id = %d", $qty, $planet->id);
+        if (!IB_DB::check($wpdb->query($sql), 'planet leave')) {
+            IB_Player::add($p, [$ship_col => $qty]);
+            throw new IB_Game_Exception(sprintf('This planet can only support %s colonists.', IB_Game::fmt($max)));
+        }
         return sprintf('Unloaded %s %s onto %s.', IB_Game::fmt($qty), IB_Game::label($what), $planet->planet_name);
     }
 
@@ -195,10 +213,18 @@ class IB_Planets {
             }
         }
         IB_Player::spend_credits($p, $req['credits']);
-        $wpdb->query($wpdb->prepare(
-            'UPDATE ' . IB_DB::t('planets') . ' SET bastion_level = %d, ore = ore - %d, organics = organics - %d, equipment = equipment - %d WHERE id = %d',
-            $next, $req['ore'], $req['organics'], $req['equipment'], $planet->id
-        ));
+        // Guarded on the level this request saw and on the materials, so two builds fired together
+        // cannot both be paid for with one stockpile, or skip a level.
+        $built = IB_DB::check($wpdb->query($wpdb->prepare(
+            'UPDATE ' . IB_DB::t('planets') . ' SET bastion_level = %d, ore = ore - %d, organics = organics - %d, equipment = equipment - %d
+             WHERE id = %d AND bastion_level = %d AND colonists >= %d AND ore >= %d AND organics >= %d AND equipment >= %d',
+            $next, $req['ore'], $req['organics'], $req['equipment'], $planet->id, $next - 1,
+            $req['colonists'], $req['ore'], $req['organics'], $req['equipment']
+        )), 'bastion build');
+        if (!$built) {
+            IB_Player::add($p, ['credits' => $req['credits']]);
+            throw new IB_Game_Exception('The planet\'s stockpile or bastion changed while the work was being ordered. Nothing was charged; please try again.');
+        }
         IB_Player::add($p, ['experience' => 10 * $next]);
         IB_Log::news('bastion', sprintf('%s completed a level %d bastion (%s) on %s in sector %d.',
             $p->alias_name, $next, $req['name'], $planet->planet_name, $planet->sector_id));
@@ -223,7 +249,7 @@ class IB_Planets {
                 throw new IB_Game_Exception(sprintf('You only have %s credits.', IB_Game::fmt($p->credits)));
             }
             IB_Player::spend_credits($p, $amount);
-            $wpdb->query($wpdb->prepare("UPDATE $t SET bastion_vault = bastion_vault + %d WHERE id = %d", $amount, $planet->id));
+            IB_DB::check($wpdb->query($wpdb->prepare("UPDATE $t SET bastion_vault = bastion_vault + %d WHERE id = %d", $amount, $planet->id)), 'vault deposit');
             return sprintf('Deposited %s credits in the Vault.', IB_Game::fmt($amount));
         }
         $ok = $wpdb->query($wpdb->prepare("UPDATE $t SET bastion_vault = bastion_vault - %d WHERE id = %d AND bastion_vault >= %d", $amount, $planet->id, $amount));
@@ -236,9 +262,9 @@ class IB_Planets {
         global $wpdb;
         $planet = self::require_landed($p);
         if ((int) $planet->owner_player_id !== (int) $p->id) throw new IB_Game_Exception('Only the owner can rename a planet.');
-        $name = trim(sanitize_text_field($name));
-        if ($name === '' || strlen($name) > 100) throw new IB_Game_Exception('Enter a name of up to 100 characters.');
-        $wpdb->update(IB_DB::t('planets'), ['planet_name' => $name], ['id' => $planet->id]);
+        $name = IB_Names::clean($name);
+        if ($name === '' || IB_Names::length($name) > 100) throw new IB_Game_Exception('Enter a name of up to 100 characters.');
+        IB_DB::check($wpdb->update(IB_DB::t('planets'), ['planet_name' => $name], ['id' => $planet->id]), 'planet rename');
         return 'Planet renamed to ' . $name . '.';
     }
 
@@ -264,8 +290,9 @@ class IB_Planets {
                 IB_Game::fmt($room), IB_Player::holds_free($p), IB_Player::colonists_per_hold()));
         }
         $cost = $qty * (int) IB_Settings::get('price_colonist');
-        IB_Player::spend_credits($p, $cost);
-        IB_Player::add($p, ['colonists' => $qty]);
+        // Fare and berths in one guarded write: the holds must still have room when it lands.
+        IB_Player::spend($p, ['credits' => $cost], ['colonists' => $qty], [],
+            sprintf('That costs %s credits and needs berths for %s; your credits or hold space changed. Please try again.', IB_Game::fmt($cost), IB_Game::fmt($qty)));
         return sprintf('%s colonists board your ship, filling %d holds (%s credits in transport fees).',
             IB_Game::fmt($qty), IB_Player::colonist_holds($p->colonists), IB_Game::fmt($cost));
     }
@@ -275,14 +302,20 @@ class IB_Planets {
         if ((int) $p->worldseeds < 1) throw new IB_Game_Exception('You have no Worldseeds.');
         if (IB_Game::is_core($p->sector_id)) throw new IB_Game_Exception('Imperial law forbids Worldseeds in the Imperial Core.');
         if (count(self::in_sector($p->sector_id)) >= self::MAX_PER_SECTOR) throw new IB_Game_Exception('This sector cannot support another planet.');
-        $name = trim(sanitize_text_field($name));
-        if ($name === '') $name = $p->alias_name . "'s World";
+        $name = IB_Names::clean($name);
+        if ($name === '') $name = IB_Names::cut($p->alias_name . "'s World", 100);
+        if (IB_Names::length($name) > 100) throw new IB_Game_Exception('Planet names can be up to 100 characters.');
         $class = self::random_class();
-        IB_Player::add($p, ['worldseeds' => -1, 'experience' => 10]);
-        $wpdb->insert(IB_DB::t('planets'), [
-            'sector_id' => $p->sector_id, 'planet_name' => substr($name, 0, 100), 'planet_class' => $class,
+        // One seed, one world: spent with a guard, so parallel launches cannot share a seed.
+        IB_Player::spend($p, ['worldseeds' => 1], ['experience' => 10], [], 'You have no Worldseeds.');
+        $inserted = $wpdb->insert(IB_DB::t('planets'), [
+            'sector_id' => $p->sector_id, 'planet_name' => $name, 'planet_class' => $class,
             'owner_player_id' => $p->id, 'team_id' => (int) $p->team_id, 'created_at' => current_time('mysql'),
         ]);
+        if ($inserted === false) {
+            IB_Player::add($p, ['worldseeds' => 1]);
+            IB_DB::check(false, 'worldseed planet');
+        }
         IB_Log::news('worldseed', sprintf('%s created a new %s planet, %s, in sector %d.', $p->alias_name, self::class_name($class), $name, $p->sector_id));
         return sprintf('The Worldseed takes root... a new %s planet, %s, forms before your eyes!', self::class_name($class), $name);
     }
@@ -570,7 +603,7 @@ class IB_Planets {
         $amount = (int) $amount;
         if ($amount <= 0) throw new IB_Game_Exception('Enter an amount greater than zero.');
         IB_Player::spend_credits($p, $amount);
-        $wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('planets') . ' SET vending_fund = vending_fund + %d WHERE id = %d', $amount, $planet->id));
+        IB_DB::check($wpdb->query($wpdb->prepare('UPDATE ' . IB_DB::t('planets') . ' SET vending_fund = vending_fund + %d WHERE id = %d', $amount, $planet->id)), 'vending fund');
         $cost = self::vending_cost($planet);
         $fund = (int) $planet->vending_fund + $amount;
         return sprintf('Added %s credits to the vending supply fund on %s (%s in the fund%s).', IB_Game::fmt($amount), $planet->planet_name,

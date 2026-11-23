@@ -13,30 +13,61 @@ class IB_Actions {
         // Where to go afterwards for actions that keep the player on the same page: the page the
         // form was submitted from. wp_get_referer() is no help here, as it returns false when the
         // referring page is the same URL as the request, which these self-posting forms always are.
-        $return = isset($_POST['ib_return']) ? wp_unslash($_POST['ib_return']) : '';
+        $return = isset($_POST['ib_return']) && is_scalar($_POST['ib_return']) ? wp_unslash((string) $_POST['ib_return']) : '';
         $redirect = $return
             ? wp_validate_redirect($return, IB_UI::url('dashboard'))
             : (wp_get_raw_referer() ?: IB_UI::url('dashboard'));
-        if (!isset($_POST['ib_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ib_nonce'])), 'ib_action')) {
+        // Each form carries a nonce minted for its own action, so a nonce lifted from one form
+        // cannot be replayed against a different action.
+        $action = is_scalar($_POST['ib_action']) ? sanitize_key(wp_unslash((string) $_POST['ib_action'])) : '';
+        $nonce = isset($_POST['ib_nonce']) && is_scalar($_POST['ib_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['ib_nonce'])) : '';
+        if ($action === '' || $nonce === '' || !wp_verify_nonce($nonce, 'ib_action_' . $action)) {
+            self::log_nonce_failure($action);
             IB_UI::flash('error', 'Your session expired. Please try again.');
             wp_safe_redirect($redirect);
             exit;
         }
 
-        $action = sanitize_key(wp_unslash($_POST['ib_action']));
         $p = IB_Player::current();
+        global $wpdb;
+        // The whole action is one transaction: a refusal part-way through (or a database error)
+        // rolls back every write the action had already made, so nothing is left half done.
+        // Refusals that are themselves the outcome (a customs fine, a spent haggle attempt, a
+        // counted wrong team password) are thrown with commit set and are kept.
+        $wpdb->query('START TRANSACTION');
         try {
             if (!$p && $action !== 'register') throw new IB_Game_Exception('Create a pilot first.');
             list($messages, $goto) = self::dispatch($action, $p);
+            $wpdb->query('COMMIT');
             foreach ((array) $messages as $m) {
                 if (is_array($m)) IB_UI::flash($m[0], $m[1]); else IB_UI::flash('success', $m);
             }
             if ($goto) $redirect = IB_UI::url($goto);
         } catch (IB_Game_Exception $e) {
+            $wpdb->query($e->commit ? 'COMMIT' : 'ROLLBACK');
             IB_UI::flash($e->type, $e->getMessage());
+        } catch (Throwable $e) {
+            // Anything unexpected: undo the action, keep the details out of the page, and log them.
+            $wpdb->query('ROLLBACK');
+            error_log('Imperial Barons Online: action "' . $action . '" failed with ' . get_class($e) . ': ' . $e->getMessage()
+                . ' in ' . $e->getFile() . ':' . $e->getLine());
+            IB_UI::flash('error', 'Something went wrong and nothing was changed. Please try again.');
         }
         wp_safe_redirect($redirect);
         exit;
+    }
+
+    /**
+     * Records a failed nonce in the admin log, at most once every ten minutes per user, so a
+     * stream of forged or replayed requests is visible without letting anyone flood the log.
+     */
+    private static function log_nonce_failure($action) {
+        $user = get_current_user_id();
+        $key = 'ib_nonce_fail_' . $user;
+        if (get_transient($key)) return;
+        set_transient($key, 1, 10 * MINUTE_IN_SECONDS);
+        IB_Log::admin('security', sprintf('Rejected a game action with a missing or invalid nonce (user #%d, action "%s").',
+            $user, substr((string) $action, 0, 40)));
     }
 
     /**
@@ -165,6 +196,14 @@ class IB_Actions {
                 return [[IB_Teams::make_captain($p, self::int('member_id'))], null];
             case 'team_disband':
                 return [[IB_Teams::disband($p)], null];
+            case 'team_accept':
+                return [[IB_Teams::accept($p, self::int('member_id'))], null];
+            case 'team_decline':
+                return [[IB_Teams::decline($p, self::int('member_id'))], null];
+            case 'team_cancel_request':
+                return [[IB_Teams::cancel_request($p)], null];
+            case 'team_password':
+                return [[IB_Teams::change_password($p, (string) self::field('password'))], null];
             case 'team_post':
                 return [[IB_Teams::post($p, self::field('message'))], null];
 

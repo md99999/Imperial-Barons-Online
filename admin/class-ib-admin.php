@@ -180,6 +180,11 @@ class IB_Admin {
             $msg .= ' A block navigation menu was created for your theme\'s header.'
                 . ' If the header still shows a different menu, choose "Imperial Barons Online" in its Navigation block in the Site Editor.';
         } elseif ($location) {
+            // Only a location the active theme actually registers; anything else is refused
+            // rather than written into the theme's settings.
+            if (!array_key_exists($location, get_registered_nav_menus())) {
+                throw new IB_Game_Exception('That menu location does not exist in the active theme. The pages and menu were still set up.');
+            }
             $locations = get_theme_mod('nav_menu_locations', []);
             $locations[$location] = $menu_id;
             set_theme_mod('nav_menu_locations', $locations);

@@ -11,9 +11,19 @@ if (!defined('ABSPATH')) exit;
  */
 class IB_Game_Exception extends Exception {
     public $type;
-    public function __construct($message, $type = 'error') {
+
+    /**
+     * Every game action runs inside a database transaction (IB_Actions::handle), and an exception
+     * normally rolls it back so a half-finished action leaves nothing behind. A few refusals are
+     * themselves the result and must stick: a customs fine, a spent haggle attempt, a counted
+     * failed team password. Those are thrown with $commit = true.
+     */
+    public $commit;
+
+    public function __construct($message, $type = 'error', $commit = false) {
         parent::__construct($message);
         $this->type = $type;
+        $this->commit = (bool) $commit;
     }
 }
 
@@ -23,6 +33,83 @@ class IB_DB {
     public static function t($name) {
         global $wpdb;
         return $wpdb->prefix . 'ib_' . $name;
+    }
+
+    /**
+     * Checks the result of a $wpdb write. false means the database refused it: the database's own
+     * words go to the PHP error log only, and the player gets a generic message, so a failed write
+     * can never be reported as a success or leak schema details to a page.
+     *
+     * @param mixed  $result what $wpdb->insert/update/query returned
+     * @param string $what   a short description for the error log
+     * @return mixed $result, when it is not false
+     */
+    public static function check($result, $what) {
+        if ($result === false) {
+            global $wpdb;
+            error_log('Imperial Barons Online: database write failed (' . $what . '): ' . $wpdb->last_error);
+            throw new IB_Game_Exception('The Imperial records office could not save that. Nothing has changed; please try again.');
+        }
+        return $result;
+    }
+
+    /**
+     * Fixed-window rate limit kept in two columns of a row, applied in one guarded UPDATE so that
+     * parallel requests cannot all slip under the limit together. Counts this attempt.
+     *
+     * @return bool true if the attempt is allowed, false if the window's limit is already used up
+     */
+    public static function rate_limit($table, $id, $count_col, $window_col, $limit, $seconds) {
+        global $wpdb;
+        // Column names come only from the callers below, never from a request.
+        $allowed = ['join_attempts' => 'join_window', 'msg_count' => 'msg_window'];
+        if (!isset($allowed[$count_col]) || $allowed[$count_col] !== $window_col) return false;
+        $start = date('Y-m-d H:i:s', current_time('timestamp') - (int) $seconds);
+        $now = current_time('mysql');
+        $ok = $wpdb->query($wpdb->prepare(
+            'UPDATE ' . self::t($table) . " SET
+                $count_col = IF($window_col IS NULL OR $window_col < %s, 1, $count_col + 1),
+                $window_col = IF($window_col IS NULL OR $window_col < %s, %s, $window_col)
+             WHERE id = %d AND ($window_col IS NULL OR $window_col < %s OR $count_col < %d)",
+            $start, $start, $now, (int) $id, $start, (int) $limit
+        ));
+        return (bool) $ok;
+    }
+}
+
+/**
+ * Names players choose (aliases, ships, planets, teams): cleaned, measured in characters rather
+ * than bytes, and checked against names that would let one pilot pass as the game itself.
+ */
+class IB_Names {
+    /** Names, compared without case, accents, spaces or punctuation, that only the game may use. */
+    const RESERVED = ['theimperialchancery', 'imperialchancery', 'chancery', 'thechancery', 'thecrown', 'crown',
+                      'theimperialcrown', 'imperialcrown', 'imperium', 'admin', 'administrator', 'sysop', 'system',
+                      'moderator', 'unknown', 'thecrownsfactors', 'imperialcustoms'];
+
+    /**
+     * sanitize_text_field() plus removal of the invisible characters that let a name look like
+     * another one: zero-width characters, byte-order marks and the bidirectional overrides that
+     * can make text display reversed.
+     */
+    public static function clean($value) {
+        $value = sanitize_text_field((string) $value);
+        $value = preg_replace('/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2069}\x{FEFF}]/u', '', $value);
+        return $value === null ? '' : trim($value);
+    }
+
+    public static function length($value) {
+        return mb_strlen((string) $value, 'UTF-8');
+    }
+
+    /** Cuts to $max characters without splitting a multibyte character. */
+    public static function cut($value, $max) {
+        return mb_substr((string) $value, 0, (int) $max, 'UTF-8');
+    }
+
+    public static function is_reserved($value) {
+        $key = strtolower(preg_replace('/[^a-z0-9]/i', '', remove_accents((string) $value)));
+        return $key !== '' && in_array($key, self::RESERVED, true);
     }
 }
 
